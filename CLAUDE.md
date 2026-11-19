@@ -48,6 +48,11 @@ It is one local app with two layers:
   - Every answer or field cites evidence that can be checked: a verified quote with its timestamp, page or frame, or the photo itself. Otherwise it says "not in the document", "can't tell" or "needs review".
   - Fixed rules, not the model, set FEMA damage levels.
 - **Never commit** model weights, datasets, the corpus PDFs or anything under `data/`. CrisisMMD is licensed CC BY-NC-SA, so never commit its images.
+- **The organizers' practice pack** lives in `eval/datasets/practice_pack/`, which git ignores. Code finds it through `STORMLOG_PRACTICE_DIR`, which defaults to that folder. Their rules:
+  - Never commit the pack, its answers, or any per-item outputs to this public repo. Only aggregate scores may go in the README.
+  - No fine-tuning.
+  - The app must never look up answers in the labels of the source datasets (COCO, VizWiz, LibriSpeech, ESC-50, SQuAD, HumanEval).
+  - Few-shot examples and retrieval are allowed.
 - **Contract files** (`contracts/`, `backend/schemas.py`) change only when both sessions agree.
 
 ## Folder ownership (two Claude Code sessions)

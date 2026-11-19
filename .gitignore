@@ -17,6 +17,12 @@ logs/
 domain/storm/corpus/
 eval/datasets/
 
+# Organizers' practice pack: their rules forbid committing it to a public repo. Keep it local.
+# Unpacked copy lives in eval/datasets/practice_pack/ (ignored above).
+archive.zip
+practice_pack/
+*.zip
+
 # OS / editor
 .DS_Store
 Thumbs.db

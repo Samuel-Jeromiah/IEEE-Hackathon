@@ -4,6 +4,55 @@ The newest entry goes on top. Each entry records: date and time, which machine, 
 
 ---
 
+## 2026-11-19 ~14:45, Windows laptop: the organizers' practice pack (read this first)
+
+**What it is:** the organizers' official practice pack, 100 items:
+
+| Input | Items | Format |
+|---|---|---|
+| Image | 25 | JPG, long side up to 1280 px |
+| Audio | 20 | WAV, 16 kHz mono, up to 60 s; speech or everyday sounds |
+| Text | 20 | Questions over 5 documents, each as both TXT and PDF, up to 3 pages |
+| Video | 15 | MP4 with **no audio track**, up to 30 s and 720p |
+| Code | 20 | HumanEval-style function prompts |
+
+The files:
+- `items.json` lists `{id, modality, file, question}`.
+- `answers.json` has the reference answers. Document items marked `answerable: false` expect "not in the document". Speech items include a `transcript`, and code items an `entry_point`.
+- Each code item's unit tests are in `code/tests/<id>_test.py`.
+
+**Where it is:**
+- On Windows: unpacked into `eval/datasets/practice_pack/`, which git ignores. `archive.zip` is ignored too.
+- **The Mac must get it by AirDrop or USB, never through GitHub.**
+
+**How judging works (from the pack's README):**
+1. Before the demos we receive a new set of items in the same format.
+2. Judges pick items at random, and may add surprise items.
+3. The app answers live on our laptop **with Wi-Fi off**.
+
+**What this changes for the Mac session:**
+1. **The general tools are the priority** (M1–M2). They are what judges test live; storm mode comes after.
+2. **Video must work from the picture alone.** The judges' clips have no sound.
+3. **Audio must handle both speech and everyday sounds.** Run Whisper and CLAP, then answer from whichever fits the question. Keep the sound labels a broad vocabulary, not tuned to ESC-50.
+4. **Documents are TXT or PDF, and several questions share one document.** Unanswerable questions must get "not in the document".
+5. **Code items:** `file` is `null`, and the full function prompt is in `question`. Show the code. Running the item's unit tests in the sandbox is a strong demo moment.
+6. **Evaluation: write `eval/run_practice.py`.**
+   - It runs all 100 items through `/api/analyze` and scores each modality:
+     - Image: reference match.
+     - Speech: WER against the transcript.
+     - Sounds: label match.
+     - Documents: EM/F1 plus abstention.
+     - Video: reference match.
+     - Code: unit tests passing.
+   - This becomes the main evaluation. The public-benchmark runs in `docs/PLAN.md` become optional, but keep the storm-specific checks.
+   - Keep per-item outputs local; only aggregate scores go in the README.
+7. **Judge mode (recommended):** a screen that reads a pack's `items.json` and runs an item with one click. Judges pick items at random, so this makes the live test fast. It needs a small contract addition (list and serve the local pack), so agree on it first.
+8. **Wi-Fi off:** the judges' test must run fully at http://127.0.0.1:8000 in the Mac's own browser. Show the phone flow separately.
+
+**Shared one-pager for the team:** the "StormLog: team one-pager" doc (Claude Docs), shared by the repo owner.
+
+---
+
 ## 2026-11-19 ~14:15, Windows laptop: Mac specs and git history
 
 **Mac confirmed:** Apple M1, 16 GB of RAM, 1 TB of storage. It uses the `mac16` profile, which `./scripts/setup.sh` picks automatically.
