@@ -59,6 +59,7 @@ It is one local app with two layers:
 - Make small commits with clear messages.
 - Run `git pull --rebase` before every push.
 - **Ask the user before pushing.** Never force-push.
+- **Don't credit AI tools as commit co-authors.** Commit messages and PR descriptions must not include a `Co-Authored-By: Claude` trailer, or any other AI trailer. The team decided this, and the README's statement on AI coding tools covers disclosure.
 - Tags: `v0.1` (the five general tiles work), `v0.5` (StormLog works), `v1.0` (final).
 
 ## Gotchas (already found)

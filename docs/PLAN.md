@@ -28,7 +28,7 @@ The code is due **Friday, Nov 20**. The exact time is unconfirmed; this plan ass
 **Where we are (Thursday, about 12:15).** No code has been written. About 24 hours remain, including sleep. Decisions so far:
 - **Domain:** storm-damage reporting for small-town Maine emergency managers.
 - **No interviews with real users are possible.** Impact evidence will come from public records, the published reporting process, and our own measurements.
-- **Demo and model machine:** a teammate's MacBook. Its chip and memory are not checked yet, so this plan assumes Apple Silicon with 16 GB and has fallbacks below. It has at least 15 GB of free disk space.
+- **Demo and model machine:** a teammate's MacBook with an Apple M1, 16 GB of RAM and 1 TB of storage. It runs the `mac16` profile.
 - **Development:** Claude Code will run on the Mac. This Windows laptop does the repo setup first (Phase 0), and can optionally keep building the frontend afterwards.
 - **Repo:** https://github.com/Samuel-Jeromiah/IEEE-Hackathon. It is public, with a `main` branch and one existing commit, so we clone it rather than overwrite it. We ask before every push. Lane A confirms with the organizers that a repo under a personal account counts as "the team's public IEEE GitHub repo".
 - **Northeastern HPC:** not used at runtime, and dropped from the critical path to save time.
@@ -187,7 +187,7 @@ There is no PII redaction step: this domain has no SSNs, and all data stays on t
 
 ## Model profiles (`serving/models.yaml`)
 
-| | `mac16` (the default until the Mac is checked) | `mac8` | `cpu` (Windows fallback) |
+| | `mac16` (the demo Mac: M1, 16 GB) | `mac8` | `cpu` (Windows fallback) |
 |---|---|---|---|
 | Vision-language model (images, OCR, frames, text Q&A, extraction) | Qwen3.5-4B Q4_K_M with mmproj-F16. Try Qwen3.5-9B Q4_K_M if the smoke tests show memory and speed are OK | Qwen3.5-2B, or 4B | Qwen3.5-4B |
 | Code model | Qwen2.5-Coder-3B-Instruct Q4_K_M, always loaded. Use 7B if the 9B vision model isn't used and memory allows | Coder-3B, started on demand | Coder-3B, started on demand |

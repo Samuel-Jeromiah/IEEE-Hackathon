@@ -4,6 +4,17 @@ The newest entry goes on top. Each entry records: date and time, which machine, 
 
 ---
 
+## 2026-11-19 ~14:15, Windows laptop: Mac specs and git history
+
+**Mac confirmed:** Apple M1, 16 GB of RAM, 1 TB of storage. It uses the `mac16` profile, which `./scripts/setup.sh` picks automatically.
+
+**Git history was rewritten once, at the team's request,** to remove the `Co-Authored-By: Claude` trailers. Only the commit messages changed; the code is byte-for-byte identical, so the commit IDs are new.
+- **If you cloned before ~14:15 and have no local work:** run `git fetch origin && git reset --hard origin/main`.
+- **If you have local commits:** run `git pull --rebase`. Git will skip the old copies of these commits.
+- **From now on:** no AI co-author trailers on commits (see `CLAUDE.md`, Git).
+
+---
+
 ## 2026-11-19 ~13:45, Windows laptop: the web app (`frontend/`)
 
 **Done:**
