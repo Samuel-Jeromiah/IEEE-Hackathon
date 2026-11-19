@@ -1,0 +1,60 @@
+{
+  "request_id": "req_example",
+  "mode": "general",
+  "status": "ok",
+  "answer": "She says the road by the old mill is flooded (0:00-0:04). A siren is audible from 0:05.",
+  "artifacts": [
+    {
+      "artifact_id": "a1",
+      "kind": "audio",
+      "filename": "voice-note.m4a",
+      "converted_from": "m4a",
+      "answer": "She says the road by the old mill is flooded (0:00-0:04). A siren is audible from 0:05.",
+      "description": null,
+      "extracted_text": null,
+      "transcript": [
+        {
+          "t_start": 0.0,
+          "t_end": 4.1,
+          "text": "Hi, it's Dana. The road by the old mill is flooded."
+        },
+        {
+          "t_start": 4.1,
+          "t_end": 7.8,
+          "text": "I can hear a siren coming from the north side."
+        }
+      ],
+      "sounds": [
+        {
+          "t_start": 0.0,
+          "t_end": 5.0,
+          "label": "rain",
+          "score": 0.71
+        },
+        {
+          "t_start": 5.0,
+          "t_end": 10.0,
+          "label": "siren",
+          "score": 0.64
+        }
+      ],
+      "frames": [],
+      "doc_qa": null,
+      "code": null,
+      "model": "stub",
+      "latency_ms": 15,
+      "status": "ok",
+      "error": null
+    }
+  ],
+  "timings_ms": {
+    "total": 15
+  },
+  "degraded": [],
+  "models": {
+    "vlm": "stub",
+    "asr": "stub",
+    "sound": "stub",
+    "coder": "stub"
+  }
+}

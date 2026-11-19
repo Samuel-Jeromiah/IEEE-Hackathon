@@ -43,7 +43,16 @@ default-groups = ["dev", "eval"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 110
 target-version = "py312"
+
+[tool.ruff.lint]
+# Pinned so lint results match on every machine (newer ruff versions enable more rules by default).
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "B008",  # FastAPI's File()/Form() parameter defaults are the intended pattern
+    "E501",  # long lines are fine in a hackathon codebase
+]

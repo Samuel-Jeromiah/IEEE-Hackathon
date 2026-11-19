@@ -1,0 +1,43 @@
+{
+  "request_id": "req_example",
+  "mode": "general",
+  "status": "ok",
+  "answer": "Rent is due on the first day of each month (page 2).",
+  "artifacts": [
+    {
+      "artifact_id": "a1",
+      "kind": "document",
+      "filename": "lease.pdf",
+      "converted_from": null,
+      "answer": "Rent is due on the first day of each month (page 2).",
+      "description": null,
+      "extracted_text": null,
+      "transcript": [],
+      "sounds": [],
+      "frames": [],
+      "doc_qa": {
+        "found": true,
+        "answer": "On the first day of each month.",
+        "quote": "Rent is due on the first day of each month.",
+        "page": 2,
+        "match_score": 100.0,
+        "retrieval_score": 11.4
+      },
+      "code": null,
+      "model": "stub",
+      "latency_ms": 11,
+      "status": "ok",
+      "error": null
+    }
+  ],
+  "timings_ms": {
+    "total": 11
+  },
+  "degraded": [],
+  "models": {
+    "vlm": "stub",
+    "asr": "stub",
+    "sound": "stub",
+    "coder": "stub"
+  }
+}

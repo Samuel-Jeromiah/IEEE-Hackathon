@@ -1,0 +1,74 @@
+{
+  "request_id": "req_example",
+  "mode": "general",
+  "status": "ok",
+  "answer": "Yes. A pickup truck drives through the flooded street starting at 0:04 (frame 2).",
+  "artifacts": [
+    {
+      "artifact_id": "a1",
+      "kind": "video",
+      "filename": "street.mov",
+      "converted_from": "mov",
+      "answer": "Yes. A pickup truck drives through the flooded street starting at 0:04 (frame 2).",
+      "description": "Water covers a residential street. At 0:04 a pickup truck drives slowly through it; by 0:10 the water reaches the truck's wheel rims.",
+      "extracted_text": null,
+      "transcript": [
+        {
+          "t_start": 1.2,
+          "t_end": 3.0,
+          "text": "Look how high it is."
+        }
+      ],
+      "sounds": [
+        {
+          "t_start": 0.0,
+          "t_end": 5.0,
+          "label": "engine idling",
+          "score": 0.58
+        }
+      ],
+      "frames": [
+        {
+          "idx": 0,
+          "t": 0.0,
+          "caption": "Flooded street, parked cars on the left.",
+          "thumb_b64": null
+        },
+        {
+          "idx": 1,
+          "t": 4.0,
+          "caption": "A pickup truck enters the water.",
+          "thumb_b64": null
+        },
+        {
+          "idx": 2,
+          "t": 8.0,
+          "caption": "The truck is halfway down the street.",
+          "thumb_b64": null
+        },
+        {
+          "idx": 3,
+          "t": 10.0,
+          "caption": "Water up to the wheel rims.",
+          "thumb_b64": null
+        }
+      ],
+      "doc_qa": null,
+      "code": null,
+      "model": "stub",
+      "latency_ms": 20,
+      "status": "ok",
+      "error": null
+    }
+  ],
+  "timings_ms": {
+    "total": 20
+  },
+  "degraded": [],
+  "models": {
+    "vlm": "stub",
+    "asr": "stub",
+    "sound": "stub",
+    "coder": "stub"
+  }
+}

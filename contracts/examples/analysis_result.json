@@ -1,0 +1,10 @@
+{
+  "prompt": "Total the damage by category and compare it to the county threshold.",
+  "code": {
+    "source": "import pandas as pd\n\ndf = pd.read_csv('input.csv')\ntotals = df.groupby('category')['est_cost'].sum()\nprint(totals.to_string())\n\nassert totals.sum() == df['est_cost'].sum()\nassert (totals >= 0).all()\nassert set(totals.index) <= set('ABCDEFG')\n",
+    "stdout": "category\nA    12000.0\nC    48000.0\n",
+    "stderr": "",
+    "tests_passed": true,
+    "attempts": 1
+  }
+}

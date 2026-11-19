@@ -1,0 +1,290 @@
+{
+  "incident": {
+    "name": "November windstorm (demo)",
+    "town": "Pine Harbor (fictional)",
+    "county": "Knox",
+    "started": "2026-11-17",
+    "id": "inc_demo",
+    "created_at": "2026-11-18T14:00:00+00:00"
+  },
+  "sites": [
+    {
+      "id": "site_1",
+      "incident_id": "inc_demo",
+      "created_at": "2026-11-18T14:05:00+00:00",
+      "location": {
+        "text": "14 Water Street",
+        "lat": null,
+        "lon": null,
+        "source": "voice_note"
+      },
+      "kind": "home",
+      "level": "major",
+      "level_reason": "Stub: water in first-floor living space. Real rule text comes from domain/storm/levels.py.",
+      "category": null,
+      "observations": [
+        {
+          "name": "water_line",
+          "value": "first_floor_living",
+          "evidence_ids": [
+            "e1",
+            "e2"
+          ]
+        },
+        {
+          "name": "roof",
+          "value": "none",
+          "evidence_ids": [
+            "e1"
+          ]
+        },
+        {
+          "name": "structure",
+          "value": "minor",
+          "evidence_ids": [
+            "e1"
+          ]
+        }
+      ],
+      "hazards": [],
+      "fields": {
+        "location": {
+          "value": "14 Water Street",
+          "evidence_ids": [
+            "e2"
+          ],
+          "needs_review": false
+        },
+        "damage": {
+          "value": "Flooding in the living room; water above the outlets.",
+          "evidence_ids": [
+            "e1",
+            "e2"
+          ],
+          "needs_review": false
+        },
+        "access": {
+          "value": null,
+          "evidence_ids": [],
+          "needs_review": true
+        }
+      },
+      "evidence": [
+        {
+          "id": "e1",
+          "artifact_id": "a_photo_1",
+          "kind": "photo",
+          "quote": null,
+          "locator": null,
+          "verified": true,
+          "match_score": null,
+          "media_url": "/api/media/inc_demo/site_1_photo.jpg"
+        },
+        {
+          "id": "e2",
+          "artifact_id": "a_voice_1",
+          "kind": "voice",
+          "quote": "the water came up past the outlets in the living room",
+          "locator": {
+            "t_start": 4.2,
+            "t_end": 8.9,
+            "frame_idx": null,
+            "t": null,
+            "page": null
+          },
+          "verified": true,
+          "match_score": 97.0,
+          "media_url": null
+        }
+      ],
+      "est_cost": null,
+      "status": "needs_review"
+    },
+    {
+      "id": "site_2",
+      "incident_id": "inc_demo",
+      "created_at": "2026-11-18T14:20:00+00:00",
+      "location": {
+        "text": "7 Ledge Road",
+        "lat": null,
+        "lon": null,
+        "source": "typed"
+      },
+      "kind": "home",
+      "level": "needs_inspection",
+      "level_reason": "Basement water depth can't be seen in the video, so an inspector must check.",
+      "category": null,
+      "observations": [
+        {
+          "name": "water_line",
+          "value": "basement",
+          "evidence_ids": [
+            "e4"
+          ]
+        }
+      ],
+      "hazards": [
+        {
+          "type": "alarm_sounding",
+          "message": "An alarm is sounding in this video at 0:07. Check whether anyone is inside. If a CO or smoke alarm may be going off, get everyone out and call 911.",
+          "severity": "life_safety",
+          "evidence_ids": [
+            "e3"
+          ]
+        }
+      ],
+      "fields": {
+        "damage": {
+          "value": "Standing water in the basement.",
+          "evidence_ids": [
+            "e4"
+          ],
+          "needs_review": false
+        }
+      },
+      "evidence": [
+        {
+          "id": "e3",
+          "artifact_id": "a_video_2",
+          "kind": "video_audio",
+          "quote": "alarm beeping (three-beep pattern)",
+          "locator": {
+            "t_start": 7.0,
+            "t_end": 9.5,
+            "frame_idx": null,
+            "t": null,
+            "page": null
+          },
+          "verified": true,
+          "match_score": null,
+          "media_url": null
+        },
+        {
+          "id": "e4",
+          "artifact_id": "a_video_2",
+          "kind": "video_frame",
+          "quote": null,
+          "locator": {
+            "t_start": null,
+            "t_end": null,
+            "frame_idx": 3,
+            "t": 6.0,
+            "page": null
+          },
+          "verified": true,
+          "match_score": null,
+          "media_url": "/api/media/inc_demo/site_2_frame_3.jpg"
+        }
+      ],
+      "est_cost": null,
+      "status": "draft"
+    },
+    {
+      "id": "site_3",
+      "incident_id": "inc_demo",
+      "created_at": "2026-11-18T14:40:00+00:00",
+      "location": {
+        "text": "Mill Road culvert",
+        "lat": null,
+        "lon": null,
+        "source": "voice_note"
+      },
+      "kind": "public",
+      "level": null,
+      "level_reason": null,
+      "category": "C",
+      "observations": [
+        {
+          "name": "washout",
+          "value": true,
+          "evidence_ids": [
+            "e5",
+            "e6"
+          ]
+        },
+        {
+          "name": "road_passable",
+          "value": false,
+          "evidence_ids": [
+            "e6"
+          ]
+        }
+      ],
+      "hazards": [
+        {
+          "type": "road_impassable",
+          "message": "Road reported closed at the Mill Road culvert.",
+          "severity": "warning",
+          "evidence_ids": [
+            "e6"
+          ]
+        }
+      ],
+      "fields": {
+        "location": {
+          "value": "Mill Road culvert",
+          "evidence_ids": [
+            "e6"
+          ],
+          "needs_review": false
+        },
+        "damage": {
+          "value": "Culvert washed out; road closed.",
+          "evidence_ids": [
+            "e5",
+            "e6"
+          ],
+          "needs_review": false
+        }
+      },
+      "evidence": [
+        {
+          "id": "e5",
+          "artifact_id": "a_photo_3",
+          "kind": "photo",
+          "quote": null,
+          "locator": null,
+          "verified": true,
+          "match_score": null,
+          "media_url": "/api/media/inc_demo/site_3_photo.jpg"
+        },
+        {
+          "id": "e6",
+          "artifact_id": "a_voice_3",
+          "kind": "voice",
+          "quote": "the culvert on Mill Road is washed out, road's closed",
+          "locator": {
+            "t_start": 0.8,
+            "t_end": 3.9,
+            "frame_idx": null,
+            "t": null,
+            "page": null
+          },
+          "verified": true,
+          "match_score": 100.0,
+          "media_url": null
+        }
+      ],
+      "est_cost": 48000.0,
+      "status": "approved"
+    }
+  ],
+  "totals_by_level": {
+    "major": 1,
+    "needs_inspection": 1
+  },
+  "totals_by_category_usd": {
+    "C": 48000.0
+  },
+  "hazards_open": 1,
+  "threshold": {
+    "county": "Knox",
+    "population": 40607,
+    "per_capita_usd": 5.03,
+    "fiscal_year": "FY2027",
+    "threshold_usd": 204253.21,
+    "public_damage_usd": 48000.0,
+    "percent_of_threshold": 23.5,
+    "source": "Stub figures. Real values: domain/storm/thresholds.yaml (verify on fema.gov)."
+  }
+}

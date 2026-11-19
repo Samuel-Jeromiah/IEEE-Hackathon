@@ -16,7 +16,7 @@ import hashlib
 import json
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -101,7 +101,7 @@ def main() -> int:
                 **doc,
                 "bytes": len(data),
                 "sha256": hashlib.sha256(data).hexdigest(),
-                "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "fetched_at": datetime.now(UTC).isoformat(timespec="seconds"),
             }
             print(f"  got   {doc['file']} ({len(data) // 1024} KB)")
         except Exception as exc:

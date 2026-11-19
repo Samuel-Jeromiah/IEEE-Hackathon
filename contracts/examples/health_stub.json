@@ -1,0 +1,12 @@
+{
+  "status": "stub",
+  "mode": "stub",
+  "profile": null,
+  "models": {
+    "vlm": "not_loaded",
+    "coder": "not_loaded",
+    "asr": "not_loaded",
+    "sound": "not_loaded"
+  },
+  "offline": true
+}

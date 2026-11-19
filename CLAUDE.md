@@ -25,8 +25,12 @@ It is one local app with two layers:
 - `uv sync`: Python 3.12 environment from `uv.lock`.
 - `uv run pytest`: unit tests. These must pass without any models.
 - `uv run python serving/download_models.py --profile mac16 --check`: checks that model names exist on Hugging Face, without downloading.
-- `uv run python -m serving.launch --stub`: the API with example responses, no models. Lands in push #2.
-- `uv run python -m serving.launch --profile mac16`: model servers, the API and the web app. Built in M1.
+- `uv run python -m serving.launch --stub`: the API and web app with example responses, no models.
+- `uv run python -m serving.launch --profile mac16`: starts llama-server, then the API on port 8000.
+  - Add `--dry-run` to print the commands without starting anything.
+  - In real mode, `/api/health` checks the real model servers. The other endpoints still return stub data until the M1 workers replace them.
+- `uv run python -m scripts.export_examples`: regenerates `contracts/examples/` after any schema change. A test checks they match.
+- `uv run ruff check .`: lint. The rule set is pinned in `pyproject.toml`.
 - `uv run python eval/run_all.py`: the evaluation. Built in M2/M3.
 
 ## Rules

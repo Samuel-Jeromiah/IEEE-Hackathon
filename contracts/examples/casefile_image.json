@@ -1,0 +1,36 @@
+{
+  "request_id": "req_example",
+  "mode": "general",
+  "status": "ok",
+  "answer": "The dog is a golden retriever, and the ball next to it is red.",
+  "artifacts": [
+    {
+      "artifact_id": "a1",
+      "kind": "image",
+      "filename": "beach.jpg",
+      "converted_from": null,
+      "answer": "The dog is a golden retriever, and the ball next to it is red.",
+      "description": "A golden retriever lying on wet sand at the edge of the water, with a red ball beside it. The sky is overcast and there are low waves behind the dog.",
+      "extracted_text": "",
+      "transcript": [],
+      "sounds": [],
+      "frames": [],
+      "doc_qa": null,
+      "code": null,
+      "model": "stub",
+      "latency_ms": 12,
+      "status": "ok",
+      "error": null
+    }
+  ],
+  "timings_ms": {
+    "total": 12
+  },
+  "degraded": [],
+  "models": {
+    "vlm": "stub",
+    "asr": "stub",
+    "sound": "stub",
+    "coder": "stub"
+  }
+}

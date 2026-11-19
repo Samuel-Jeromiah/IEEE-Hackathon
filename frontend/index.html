@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StormLog</title>
+  <style>
+    body { font: 18px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0 auto; max-width: 40rem; padding: 1.5rem; }
+    code { background: #eee; padding: 0.1em 0.3em; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>StormLog</h1>
+  <p>Placeholder page: the real web app is being built (see <code>docs/PLAN.md</code>).</p>
+  <p>API status: <strong id="status">checking…</strong></p>
+  <script>
+    fetch("/api/health").then(r => r.json())
+      .then(h => { document.getElementById("status").textContent = `${h.status} (mode: ${h.mode})`; })
+      .catch(() => { document.getElementById("status").textContent = "unreachable"; });
+  </script>
+</body>
+</html>

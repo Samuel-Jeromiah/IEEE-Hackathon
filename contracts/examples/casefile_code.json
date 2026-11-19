@@ -1,0 +1,42 @@
+{
+  "request_id": "req_example",
+  "mode": "general",
+  "status": "ok",
+  "answer": "The script totals the damage by category and compares it to the threshold. Tests passed.",
+  "artifacts": [
+    {
+      "artifact_id": "a1",
+      "kind": "code",
+      "filename": null,
+      "converted_from": null,
+      "answer": "The script totals the damage by category and compares it to the threshold. Tests passed.",
+      "description": null,
+      "extracted_text": null,
+      "transcript": [],
+      "sounds": [],
+      "frames": [],
+      "doc_qa": null,
+      "code": {
+        "source": "import pandas as pd\n\ndf = pd.read_csv('input.csv')\ntotals = df.groupby('category')['est_cost'].sum()\nprint(totals.to_string())\n\nassert totals.sum() == df['est_cost'].sum()\nassert (totals >= 0).all()\nassert set(totals.index) <= set('ABCDEFG')\n",
+        "stdout": "category\nA    12000.0\nC    48000.0\n",
+        "stderr": "",
+        "tests_passed": true,
+        "attempts": 1
+      },
+      "model": "stub",
+      "latency_ms": 14,
+      "status": "ok",
+      "error": null
+    }
+  ],
+  "timings_ms": {
+    "total": 14
+  },
+  "degraded": [],
+  "models": {
+    "vlm": "stub",
+    "asr": "stub",
+    "sound": "stub",
+    "coder": "stub"
+  }
+}
