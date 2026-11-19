@@ -36,7 +36,7 @@ The browser drives each request in three steps:
 
 The events arrive in this order:
 - `progress` events, carrying `stage`, `pct` and `message`.
-- `delta` events, carrying chunks of the answer text as it is written.
+- `delta` events, carrying chunks of the answer text as it is written. Each chunk is raw text that already includes its own spacing (like model tokens, e.g. `" is"`), so the client joins the chunks exactly as received.
 - A final `done` event, carrying `case_id`, or an `error` event.
 
 The POST response is the full result, and it is authoritative.

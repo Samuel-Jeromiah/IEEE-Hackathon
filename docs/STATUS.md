@@ -4,6 +4,58 @@ The newest entry goes on top. Each entry records: date and time, which machine, 
 
 ---
 
+## 2026-11-19 ~13:45, Windows laptop: the web app (`frontend/`)
+
+**Done:**
+- **The whole web app:** plain ES modules with no build step and nothing from a CDN.
+  - Fonts are bundled under the SIL Open Font License: Atkinson Hyperlegible for body text, Barlow Condensed for headings, JetBrains Mono for timestamps and code.
+  - There is a light "paper" theme, plus a dark theme that follows the system setting.
+- **Home:** a model-status pill. On laptops, a QR code that phones can scan.
+- **Report damage** (the phone flow): photo, voice note, video and location, with live progress. When it finishes it opens the new site card.
+- **Site card:**
+  - Hazard banners, with a "Call 911" link for life-safety hazards.
+  - The FEMA damage-level tag, with the reason.
+  - Facts with evidence chips.
+  - An evidence dialog. It plays this device's own copy of the file from the exact timestamp.
+  - Approve and edit buttons (sent as a PATCH).
+- **Town report:**
+  - Totals and a county threshold meter showing the formula and its source.
+  - Filters, and two panes on a laptop.
+  - CSV export, a printable report, and Analyze (a script written by the code model).
+- **Ask the guide:** an answer with the exact quote and page, or "Not in the guides".
+- **The five general tools.** Results show the answer plus:
+  - **Image:** what's in the photo, and any text found.
+  - **Audio:** a transcript and sounds that jump the player to that moment.
+  - **Document:** the quote with its page, or "Not in the document".
+  - **Video:** frames that jump to that moment.
+  - **Code:** a tests badge and the output.
+- **Works over plain HTTP:** none of `crypto.randomUUID`, the clipboard API, `getUserMedia` or service workers is used. File inputs use `capture`.
+
+**Checked:**
+- `node --check` passes on all 14 JavaScript files.
+- 22 tests pass, including the new `tests/test_frontend_assets.py`. It checks that:
+  - Every referenced asset is served.
+  - JavaScript is served with a JavaScript content type.
+  - There are no external URLs.
+  - The fonts are licensed.
+- Headless Edge emulating a 390px touch phone, in light and dark themes, on 18 screens: no horizontal overflow, no JavaScript errors, and the full report flow works.
+
+**Changed outside `frontend/` (small; please note):**
+- `backend/main.py`: the stub's `delta` events now carry their own spacing (`" is"`), like model tokens.
+- `contracts/schema.md`: now states that clients join `delta` chunks exactly as received. **Mac session: stream real tokens raw. The web app joins them as-is.**
+- New file `tests/test_frontend_assets.py`. No existing tests were changed.
+
+**What real mode needs to support (Mac session):**
+- **Events buffering.** The web app opens `GET /api/events/{request_id}` before it posts. Real mode must buffer each request's events until the client connects, or replay them from the start.
+- **Evidence media.** Set `media_url` on photo and video-frame evidence, served from `/api/media/...`. Voice playback uses the file still on the reporting phone.
+- **`task_hint`.** It is sent as the tool's input type: `image`, `audio`, `document`, `video` or `code`. A photo sent from the Document tool should go down the document path: OCR, then an answer with a verified quote.
+
+**Next:**
+1. The Mac session wires real workers behind the same endpoints.
+2. Test on a phone over local Wi-Fi: run `serving.launch` without `--host`, then scan the QR code on the home screen.
+
+---
+
 ## 2026-11-19 ~13:00, Windows laptop: Phase 0, push #2
 
 **Done:**

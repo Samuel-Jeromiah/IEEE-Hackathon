@@ -151,7 +151,9 @@ def create_app() -> FastAPI:
             S.ProgressEvent(type="progress", stage="normalize", pct=10, message="Reading your file"),
             S.ProgressEvent(type="progress", stage="extract", pct=45, message="Looking and listening"),
             S.ProgressEvent(type="progress", stage="answer", pct=75, message="Writing the answer"),
-            *[S.ProgressEvent(type="delta", delta=w) for w in "This is a streamed stub answer.".split(" ")],
+            # Deltas are raw text chunks that carry their own spacing, like model tokens.
+            *[S.ProgressEvent(type="delta", delta=w if i == 0 else f" {w}")
+              for i, w in enumerate("This is a streamed stub answer.".split(" "))],
             S.ProgressEvent(type="done", pct=100, case_id=request_id),
         ]
 
