@@ -1,0 +1,49 @@
+[project]
+name = "stormlog"
+version = "0.1.0"
+description = "Offline multimodal assistant and storm-damage reporting tool (IEEE AI Hackathon 2026)"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # API server
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "psutil>=5.9",
+    "qrcode[pil]>=7.4",
+    # media
+    "numpy>=1.26",
+    "pillow>=10.3",
+    "pillow-heif>=0.18",
+    "av>=12.0",
+    # speech + sounds (CLAP weights are .bin, which needs torch >= 2.6 to load)
+    "faster-whisper>=1.1",
+    "torch>=2.6",
+    "transformers>=4.44,<5",
+    # documents + grounding
+    "pymupdf>=1.24",
+    "python-docx>=1.1",
+    "rank-bm25>=0.2.2",
+    "rapidfuzz>=3.9",
+    # code sandbox data + model downloads
+    "pandas>=2.2",
+    "huggingface-hub>=0.24",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+eval = ["datasets>=2.20", "jiwer>=3.0"]
+
+[tool.uv]
+package = false
+default-groups = ["dev", "eval"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"

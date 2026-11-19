@@ -1,0 +1,106 @@
+# Model files and hardware profiles.
+#   serving/download_models.py fetches the files for a profile into models/<key>/
+#   serving/launch.py reads the profile to start llama-server and the API.
+# Each model lists candidate repos in order; the first that downloads wins.
+# Repo and file names checked on Hugging Face on 2026-11-19.
+
+models:
+  vlm-qwen3.5-4b:
+    kind: gguf
+    candidates:
+      - repo: unsloth/Qwen3.5-4B-GGUF
+        file: Qwen3.5-4B-Q4_K_M.gguf
+        mmproj: mmproj-F16.gguf
+      - repo: Qwen/Qwen3-VL-4B-Instruct-GGUF        # fallback: the handout's recommended VLM
+        file: Qwen3VL-4B-Instruct-Q4_K_M.gguf
+        mmproj: mmproj-Qwen3VL-4B-Instruct-F16.gguf
+  vlm-qwen3.5-2b:
+    kind: gguf
+    candidates:
+      - repo: unsloth/Qwen3.5-2B-GGUF
+        file: Qwen3.5-2B-Q4_K_M.gguf
+        mmproj: mmproj-F16.gguf
+  vlm-qwen3.5-9b:
+    kind: gguf
+    candidates:
+      - repo: unsloth/Qwen3.5-9B-GGUF
+        file: Qwen3.5-9B-Q4_K_M.gguf
+        mmproj: mmproj-F16.gguf
+  vlm-qwen3-vl-4b:
+    kind: gguf
+    candidates:
+      - repo: Qwen/Qwen3-VL-4B-Instruct-GGUF
+        file: Qwen3VL-4B-Instruct-Q4_K_M.gguf
+        mmproj: mmproj-Qwen3VL-4B-Instruct-F16.gguf
+  coder-3b:
+    kind: gguf
+    candidates:
+      - repo: bartowski/Qwen2.5-Coder-3B-Instruct-GGUF
+        file: Qwen2.5-Coder-3B-Instruct-Q4_K_M.gguf
+      - repo: Qwen/Qwen2.5-Coder-3B-Instruct-GGUF
+        file: qwen2.5-coder-3b-instruct-q4_k_m.gguf
+  coder-7b:
+    kind: gguf
+    candidates:
+      - repo: bartowski/Qwen2.5-Coder-7B-Instruct-GGUF
+        file: Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf
+  whisper-small:
+    kind: snapshot
+    candidates:
+      - repo: Systran/faster-whisper-small
+  whisper-turbo:
+    kind: snapshot
+    candidates:
+      - repo: mobiuslabsgmbh/faster-whisper-large-v3-turbo
+      - repo: deepdml/faster-whisper-large-v3-turbo-ct2
+  clap:
+    kind: snapshot
+    candidates:
+      - repo: laion/clap-htsat-unfused
+        allow: ["*.json", "*.txt", "*.bin", "*.safetensors"]
+
+profiles:
+  mac16:
+    description: Apple Silicon with 16 GB or more (the demo machine)
+    vlm: vlm-qwen3.5-4b
+    coder: coder-3b
+    asr: whisper-small
+    sound: clap
+    optional: [vlm-qwen3.5-9b, coder-7b, whisper-turbo]   # fetch with --with-optional
+    coder_resident: true
+    llama: {gpu_layers: 99, threads: null}
+    limits: {image_max_px: 1024, ocr_max_px: 1280, video_max_frames: 12, frame_px: 512,
+             video_max_s: 90, audio_max_s: 300, ctx: 16384}
+    timeouts_s: {image: 30, document: 45, audio: 60, video: 120, code: 60}
+
+  mac8:
+    description: Apple Silicon with 8 GB (tight on memory)
+    vlm: vlm-qwen3.5-2b
+    coder: coder-3b
+    asr: whisper-small
+    sound: clap
+    optional: [vlm-qwen3.5-4b]
+    coder_resident: false
+    llama: {gpu_layers: 99, threads: null}
+    limits: {image_max_px: 768, ocr_max_px: 1024, video_max_frames: 8, frame_px: 448,
+             video_max_s: 60, audio_max_s: 300, ctx: 8192}
+    timeouts_s: {image: 60, document: 90, audio: 90, video: 180, code: 90}
+
+  cpu:
+    description: Windows or Linux without a GPU (slow fallback)
+    vlm: vlm-qwen3.5-4b
+    coder: coder-3b
+    asr: whisper-small
+    sound: clap
+    optional: [vlm-qwen3.5-2b]
+    coder_resident: false
+    llama: {gpu_layers: 0, threads: 4}
+    limits: {image_max_px: 768, ocr_max_px: 1024, video_max_frames: 8, frame_px: 448,
+             video_max_s: 60, audio_max_s: 300, ctx: 8192}
+    timeouts_s: {image: 60, document: 90, audio: 90, video: 180, code: 90}
+
+servers:
+  vlm: {host: 127.0.0.1, port: 8081}
+  coder: {host: 127.0.0.1, port: 8082}
+
+app: {host: 0.0.0.0, port: 8000}

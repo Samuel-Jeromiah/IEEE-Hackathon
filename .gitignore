@@ -1,0 +1,25 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Large or generated files: never commit
+models/
+bin/
+data/
+logs/
+*.gguf
+*.log
+
+# Downloaded at setup time (see serving/fetch_corpus.py, eval/fetch_datasets.py)
+domain/storm/corpus/
+eval/datasets/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.env
