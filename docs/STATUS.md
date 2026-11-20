@@ -307,3 +307,70 @@ Correction: the ChatGPT-style chat (with the "How can I help?" empty state, sugg
 - Live: a sample lease gave 14 of 14 fields verified. A sample damage report gave 3 site objects, with the 2 missing costs marked needs review.
 
 Update (~20:30): removed Document to JSON (the Chat card, `domain/extract.py`, the document worker's extraction mode, `ArtifactResult.extraction` and its stub example) at the user's request. Chat is back to four cards.
+
+---
+
+## 2026-11-19 ~21:00, Mac (Honey): Report builds real sites
+
+**Done:** In real mode, `POST /api/incidents/{id}/sites` now builds a site from the uploads instead of returning the canned flooded home. Stub mode is unchanged.
+- `backend/workers/site.py`. The models only observe, and `assemble()` (no models) does the rest:
+  - Photo: the VLM fills fixed enums (water line, roof, structure, public element, downed lines, road) and reads any visible text.
+  - Voice note: Whisper and CLAP run in parallel. The VLM then fills location, damage, people, access and water line, each with a quote. Every sentence of a quote must be found in the transcript, and its timestamp comes from `locate_quote`.
+  - Video: 4 frames go to the VLM, which picks the best one, and that frame is saved. The soundtrack is handled like a voice note.
+  - Fusion: for each observation, the most severe known value wins, keeping the evidence IDs from every source that supports it.
+  - Location order: typed, then a verified voice quote, then photo GPS, then text read from the photo (marked needs review).
+- `domain/storm/levels.py`: FEMA PDA Guide tables for conventional and manufactured homes, with page cites. Unknown evidence gives `needs_inspection`. Public sites get categories A–G. `water_line_from_text()` reads the water line from spoken words, because the 4B model labelled "water came up past the outlets" as below the outlets.
+- `domain/storm/hazards.py`: hazard phrases with negation, sound labels, and photo flags, each with a 911 message.
+- `domain/storm/tones.py`: an alarm also needs a narrow 3 kHz beep (UL 217 / UL 2034). CLAP heard plain TTS speech as a CO alarm at 45–70% in every window. Synthetic scores: speech 0.017 or less, a CO alarm under speech 0.043 or more, and the threshold is 0.03. `classify_sounds` adds `tone` to each event; the API schema is unchanged.
+- `backend/storm_store.py`: in real mode, incidents and sites are saved to `data/storm/store.json` (git-ignored), and photos and frames go to `data/media/{incident}/`. `/api/media/...` serves the saved files. To clear the store, stop the app and delete `data/storm/store.json`.
+- Tests: `tests/test_storm_site.py`. The suite passes (99), and so does ruff.
+- Live on mac16, using public-domain FEMA photos from Wikimedia Commons (kept in /tmp, not committed) and a `say` voice note:
+  - Voice note only: Major (water at the outlets, p. 49), plus gas-smell and road-closed hazards, all quotes verified. 9.5 s.
+  - The same voice note with a 3.2 kHz alarm mixed in: alarm hazard added. With no beep: no alarm.
+  - Tree on a house: Major (structural roof damage). Washed-out culvert: public site, Category C, road-impassable hazard. About 6 s each.
+  - Photo plus voice note: Major, with photo and voice evidence on the water line. 11 s.
+  - 8 s video: Major, with the best frame saved and quotes from the soundtrack. 13 s.
+  - In the browser: Report, then live progress, then the site page with hazard banners, the placard, fields linked to evidence, and the photo served from disk after a reload. The Town page counts the real site.
+
+**Not done:** The Town report's threshold figures are still stubs (`stub_data.report`), and `/analyze` on an incident is still a stub.
+
+## 2026-11-19 ~21:45, Mac (Honey): Town threshold and Analyze are real
+
+**Done:**
+- `domain/storm/thresholds.yaml` and `thresholds.py`: FEMA Public Assistance per-capita indicators by fiscal year, plus 2020 Census populations for all 16 Maine counties (Census TIGERweb, POP100).
+
+  | Fiscal year | Statewide | Countywide | Source |
+  |---|---|---|---|
+  | FY2025 | $1.89 | $4.72 | |
+  | FY2026 | $1.94 | $4.86 | |
+  | FY2027 | $2.01 | $5.03 | Federal Register, Nov 6, 2026 (countywide 91 FR 70093, statewide FR Doc. 2026-22694) |
+
+  - The year comes from the incident's start date, because FEMA's fiscal year starts on Oct 1.
+  - An unknown county gives no threshold, and the page asks for one.
+  - A year that isn't loaded uses the nearest loaded year, and the source line says so.
+  - PDA Guide p. 51: the indicators are a baseline, not a requirement.
+- `backend/storm_report.py`: `build_report()` computes totals, open hazards and the threshold, with no models. The incident page, the printable report and stub mode all use it. `site_rows()` flattens sites for analysis.
+- `backend/workers/analysis.py`: `POST /api/incidents/{id}/analyze` in real mode.
+  - The gate and the safety classifier run first.
+  - The incident's sites are written into the script as a literal DataFrame, along with the threshold constants. The coder writes the analysis and its asserts, and the script runs in the sandbox (`data` profile).
+  - Three worked examples go in the prompt. None of them is one of the presets.
+  - A static check runs before anything executes. It rejects code that reassigns `sites` or the constants, code that types in amounts of 1,000 or more that the question didn't give, and tests that compare against copied numbers. Bad tests don't stop the code from running, so the answer still shows.
+  - Up to 3 attempts, and the best one is kept. The script shown is exactly what ran, with `# Written by the code model` where the model's part starts.
+- `backend/workers/code.py`: `_ask` is now the public `ask`, shared with analysis.
+- Tests: `tests/test_storm_report.py` covers:
+  - the fiscal-year boundary;
+  - Knox County FY2027 (40,607 × $5.03 = $204,253.21);
+  - an unknown county and a year that isn't loaded;
+  - report totals;
+  - the setup running in the sandbox with quotes and newlines in the data;
+  - the worked examples running, and the static checks.
+
+  The suite passes (118), and so does ruff. `contracts/examples/incident_report.json` was regenerated; only the threshold source text changed.
+- Live on mac16, with 3 sites in `inc_demo`. The culvert has a typed $48,000 estimate.
+  - Town page: 23.5% of the Knox County FY2027 threshold.
+  - The three presets: correct output and passing tests on the first attempt, 3–6 s each. The threshold preset prints the same 23.5% as the meter.
+  - Free-form questions: "homes at each FEMA level", "public sites still needing a cost" and "share of the threshold" were correct. "Which homes have hazards?" was wrong: the code ignored the hazards column, and its tests still passed. That is the 3B coder's limit, and it's why the code is always shown.
+
+**Not done:**
+- The store holds test sites from `/tmp/stormtest`, and one of them says "Rumford". Delete `data/storm/store.json` before recording the demo.
+- Nothing is committed yet.

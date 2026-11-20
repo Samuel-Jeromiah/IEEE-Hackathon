@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 
 from backend.config import load_models_config, repo_path, resolved_models, selected_profile_name
+from domain.storm.tones import alarm_tone_fraction
 
 _lock = threading.Lock()
 _whisper: Any = None
@@ -132,7 +133,10 @@ def transcribe(path: Path) -> list[dict]:
 
 
 def classify_sounds(path: Path, window_s: float = 5.0, hop_s: float = 2.5) -> list[dict]:
-    """CLAP over sliding windows at 48 kHz. Returns [{t_start,t_end,label,score}]."""
+    """CLAP over sliding windows at 48 kHz. Returns [{t_start,t_end,label,score,tone}].
+
+    tone is the share of the window with an alarm-like 3 kHz beep (domain/storm/tones.py).
+    """
     import torch
 
     model, processor = get_clap()
@@ -172,7 +176,8 @@ def classify_sounds(path: Path, window_s: float = 5.0, hop_s: float = 2.5) -> li
         score = float(probs[best_i])
         label = phrase_to_label[best_i]
         if score >= 0.18:  # low bar; label-specific tuning comes later
-            events.append({"t_start": t, "t_end": t_end, "label": label, "score": round(score, 3)})
+            events.append({"t_start": t, "t_end": t_end, "label": label, "score": round(score, 3),
+                           "tone": round(alarm_tone_fraction(chunk, 48000), 3)})
         t += hop_s
 
     # Merge adjacent same-label windows
@@ -181,6 +186,7 @@ def classify_sounds(path: Path, window_s: float = 5.0, hop_s: float = 2.5) -> li
         if merged and merged[-1]["label"] == ev["label"] and ev["t_start"] <= merged[-1]["t_end"] + 0.1:
             merged[-1]["t_end"] = ev["t_end"]
             merged[-1]["score"] = max(merged[-1]["score"], ev["score"])
+            merged[-1]["tone"] = max(merged[-1]["tone"], ev["tone"])
         else:
             merged.append(dict(ev))
     return merged

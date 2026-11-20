@@ -8,7 +8,9 @@ or directly:
 
 Stub mode serves the examples in backend/stub_data.py for every endpoint, so the
 frontend can be built without models. Real mode runs the workers for image, document,
-audio, video, text and code, behind the guardrails in backend/guard/; storm still uses stubs.
+audio, video, text and code, behind the guardrails in backend/guard/, builds storm sites
+from uploads (backend/workers/site.py), and runs incident analysis as sandboxed code. The
+town report's totals and FEMA threshold come from fixed rules in both modes.
 Stub hooks: a document question containing "pizza" returns the not-found example, and a
 prompt containing "keylogger" returns the declined example.
 """
@@ -19,7 +21,9 @@ import base64
 import csv
 import html
 import io
+import logging
 import os
+import re
 import socket
 from pathlib import Path
 
@@ -28,14 +32,20 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from backend import jobs, manager, stub_data
+from backend import jobs, manager, storm_report, storm_store, stub_data
 from backend import schemas as S
 from backend.config import load_models_config
+from backend.guard import gate, safety
+from backend.guard.policy import load_policy
 from backend.router import route_kind
+from backend.workers import analysis as analysis_worker
 from backend.workers import guide as guide_worker
+from backend.workers import site as site_worker
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_DIR = ROOT / "frontend"
+SAFE_NAME = re.compile(r"[\w-][\w.-]*")
+log = logging.getLogger("stormlog")
 
 
 def lan_ip() -> str:
@@ -87,7 +97,7 @@ def create_app() -> FastAPI:
     profile = os.environ.get("STORMLOG_PROFILE") or None
     port = int(os.environ.get("STORMLOG_PORT", "8000"))
     app = FastAPI(title="StormLog API", version="0.1.0")
-    store = stub_data.StubStore()
+    store = stub_data.StubStore() if mode == "stub" else storm_store.FileStore()
 
     if mode != "stub":
         @app.on_event("startup")
@@ -188,11 +198,12 @@ def create_app() -> FastAPI:
     async def create_incident(body: S.IncidentCreate) -> S.Incident:
         inc = S.Incident(**body.model_dump(), id=stub_data.new_id("inc"), created_at=stub_data.now())
         store.incidents[inc.id] = inc
+        store.save()
         return inc
 
     @app.get("/api/incidents/{incident_id}", response_model=S.IncidentReport)
     async def incident_report(incident_id: str) -> S.IncidentReport:
-        return stub_data.report(get_incident(incident_id), incident_sites(incident_id))
+        return storm_report.build_report(get_incident(incident_id), incident_sites(incident_id))
 
     @app.post("/api/incidents/{incident_id}/sites", response_model=S.Site)
     async def add_site(
@@ -204,7 +215,38 @@ def create_app() -> FastAPI:
         request_id: str | None = Form(default=None),
     ) -> S.Site:
         get_incident(incident_id)
-        return store.add_site(incident_id, location_text)
+        if mode == "stub":
+            return store.add_site(incident_id, location_text)
+
+        async def read(f: UploadFile | None) -> tuple[str | None, bytes] | None:
+            data = await f.read() if f else b""
+            return (f.filename, data) if data else None
+
+        uploads = {"photo": await read(photo), "voice": await read(voice), "video": await read(video)}
+        if not any(uploads.values()):
+            raise HTTPException(400, "Add a photo, a voice note or a video.")
+        rid = request_id or jobs.new_request_id()
+
+        async def progress(stage: str, pct: float, message: str) -> None:
+            await jobs.HUB.publish(rid, S.ProgressEvent(type="progress", stage=stage, pct=pct, message=message))
+
+        try:
+            site = await site_worker.build_site(
+                incident_id=incident_id, site_id=stub_data.new_id("site"), location_text=location_text,
+                profile=jobs._profile(), progress=progress, **uploads)
+        except httpx.HTTPError as exc:
+            await jobs.HUB.publish(rid, S.ProgressEvent(type="error", message="model not responding"))
+            raise HTTPException(503, "The local model isn't responding. Try again in a moment.") from exc
+        except Exception as exc:
+            log.exception("site build failed")
+            await jobs.HUB.publish(rid, S.ProgressEvent(type="error", message=str(exc)[:300]))
+            raise HTTPException(422, "Couldn't read one of the files. Try a JPEG photo, "
+                                     "a voice memo, or an MP4/MOV video.") from exc
+        finally:
+            asyncio.create_task(jobs.HUB.cleanup(rid))
+        store.put_site(site)
+        await jobs.HUB.publish(rid, S.ProgressEvent(type="done", pct=100, case_id=site.id))
+        return site
 
     @app.patch("/api/sites/{site_id}", response_model=S.Site)
     async def patch_site(site_id: str, body: S.SitePatch) -> S.Site:
@@ -219,6 +261,7 @@ def create_app() -> FastAPI:
             site.location = S.Location(text=body.location_text, source="typed")
         for name, value in (body.fields or {}).items():
             site.fields[name] = S.FieldValue(value=value, needs_review=False)  # a person entered it
+        store.save()
         return site
 
     @app.get("/api/incidents/{incident_id}/export.csv")
@@ -229,17 +272,21 @@ def create_app() -> FastAPI:
 
     @app.get("/api/incidents/{incident_id}/report.html", response_class=HTMLResponse)
     async def report_html(incident_id: str) -> str:
-        rep = stub_data.report(get_incident(incident_id), incident_sites(incident_id))
+        rep = storm_report.build_report(get_incident(incident_id), incident_sites(incident_id))
         rows = "".join(
             f"<tr><td>{html.escape(s.location.text or '')}</td><td>{s.kind}</td>"
             f"<td>{s.level or s.category or ''}</td><td>{len(s.hazards)}</td><td>{s.status}</td></tr>"
             for s in rep.sites
         )
+        t = rep.threshold
+        meter = (f"<p>Public damage ${t.public_damage_usd:,.2f} of the {html.escape(t.county)} County threshold "
+                 f"${t.threshold_usd:,.2f} ({t.percent_of_threshold:g}%). {html.escape(t.source)}</p>"
+                 if t else "<p>No county threshold: set the incident's county.</p>")
         return (f"<!doctype html><meta charset=utf-8><title>{html.escape(rep.incident.name)}</title>"
                 f"<style>body{{font:16px system-ui;margin:24px}}td,th{{border:1px solid #999;padding:6px}}"
-                f"table{{border-collapse:collapse}}</style><h1>{html.escape(rep.incident.name)}</h1>"
+                f"table{{border-collapse:collapse}}</style><h1>{html.escape(rep.incident.name)}</h1>{meter}"
                 f"<table><tr><th>Location</th><th>Kind</th><th>Level / category</th><th>Hazards</th>"
-                f"<th>Status</th></tr>{rows}</table><p>Stub report.</p>")
+                f"<th>Status</th></tr>{rows}</table>")
 
     @app.post("/api/guide/ask", response_model=S.GuideAnswer)
     async def guide_ask(body: S.GuideQuestion) -> S.GuideAnswer:
@@ -252,11 +299,29 @@ def create_app() -> FastAPI:
 
     @app.post("/api/incidents/{incident_id}/analyze", response_model=S.AnalysisResult)
     async def analyze_incident(incident_id: str, body: S.AnalyzePrompt) -> S.AnalysisResult:
-        get_incident(incident_id)
-        return stub_data.analysis(body.prompt)
+        inc = get_incident(incident_id)
+        if mode == "stub":
+            return stub_data.analysis(body.prompt)
+        checked = gate.check_request(kind="code", prompt=body.prompt, text=None)
+        if not checked.ok:
+            raise HTTPException(400, checked.message)
+        verdict = await safety.classify(checked.question, jobs._guard_url())
+        if verdict.action != "allow":
+            pol = load_policy()
+            raise HTTPException(400, pol.messages.support if verdict.action == "support" else pol.messages.declined)
+        report = storm_report.build_report(inc, incident_sites(incident_id))
+        try:
+            return await analysis_worker.run(checked.question, report,
+                                             timeout_s=float(jobs._profile()["timeouts_s"].get("code", 60)))
+        except httpx.HTTPError as exc:
+            raise HTTPException(503, "The local model isn't responding. Try again in a moment.") from exc
 
     @app.get("/api/media/{incident_id}/{name}")
     async def media(incident_id: str, name: str) -> Response:
+        if SAFE_NAME.fullmatch(incident_id) and SAFE_NAME.fullmatch(name):
+            path = site_worker.MEDIA_DIR / incident_id / name
+            if path.is_file():
+                return Response(path.read_bytes(), media_type="image/jpeg")
         return Response(placeholder_png(f"stub media: {name}"), media_type="image/png")
 
     # ------------------------------------------------------------------ web app (mounted last)

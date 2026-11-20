@@ -76,7 +76,7 @@ def parse_reply(raw: str) -> Draft:
     return Draft(explanation, code, tests)
 
 
-async def _ask(messages: list[dict], timeout_s: float) -> tuple[Draft, str]:
+async def ask(messages: list[dict], timeout_s: float) -> tuple[Draft, str]:
     """Prefer the coder server; fall back to the VLM when the coder isn't resident."""
     max_tokens = load_policy().max_tokens("code")
     try:
@@ -98,7 +98,7 @@ async def run(prompt: str, *, model_name: str, timeout_s: float, on_delta=None) 
         {"role": "user", "content": prompt},
     ]
     try:
-        draft, used = await _ask(messages, timeout_s)
+        draft, used = await ask(messages, timeout_s)
         result = await asyncio.to_thread(runner.run_python, draft.code, draft.tests, profile=profile)
         attempts = 1
         if not result.ok and not result.timed_out:
@@ -114,7 +114,7 @@ async def run(prompt: str, *, model_name: str, timeout_s: float, on_delta=None) 
                     "and reply in the same format."
                 )},
             ]
-            draft2, used = await _ask(messages, timeout_s)
+            draft2, used = await ask(messages, timeout_s)
             result2 = await asyncio.to_thread(runner.run_python, draft2.code, draft2.tests, profile=profile)
             if result2.ok or not draft.code:
                 # the repair reply explains the fix, not the code, so keep the first explanation

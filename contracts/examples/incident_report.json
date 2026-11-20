@@ -285,6 +285,6 @@
     "threshold_usd": 204253.21,
     "public_damage_usd": 48000.0,
     "percent_of_threshold": 23.5,
-    "source": "Stub figures. Real values: domain/storm/thresholds.yaml (verify on fema.gov)."
+    "source": "FEMA FY2027 countywide indicator (Federal Register 91 FR 70093, Nov 6, 2026) × Knox County population (2020 Census)."
   }
 }

@@ -1,0 +1,40 @@
+# FEMA Public Assistance per capita impact indicators, by federal fiscal year (Oct 1 - Sep 30).
+# They apply by incident START date, not declaration date (44 CFR 206.40(b) and 206.48).
+# Add each new year from fema.gov/assistance/public/tools-resources/per-capita-impact-indicator
+# and the Federal Register notice. Indicators are a baseline, not a requirement (FEMA PDA Guide p. 51).
+indicators:
+  2025:
+    statewide: 1.89
+    countywide: 4.72
+    source: FEMA per capita indicator table, FY2025
+  2026:
+    statewide: 1.94
+    countywide: 4.86
+    source: FEMA per capita indicator table, FY2026
+  2027:  # statewide: FR Doc. 2026-22694, same date
+    statewide: 2.01
+    countywide: 5.03
+    source: Federal Register 91 FR 70093, Nov 6, 2026
+
+# FEMA multiplies the indicator by the latest decennial census population.
+# U.S. Census Bureau, 2020 Census (TIGERweb Maine county table, POP100).
+population_source: 2020 Census
+state: Maine
+state_population: 1362359
+counties:
+  Androscoggin: 111139
+  Aroostook: 67105
+  Cumberland: 303069
+  Franklin: 29456
+  Hancock: 55478
+  Kennebec: 123642
+  Knox: 40607
+  Lincoln: 35237
+  Oxford: 57777
+  Penobscot: 152199
+  Piscataquis: 16800
+  Sagadahoc: 36699
+  Somerset: 50477
+  Waldo: 39607
+  Washington: 31095
+  York: 211972

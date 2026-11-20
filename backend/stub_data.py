@@ -208,26 +208,10 @@ def demo_sites(incident_id: str = DEMO_INCIDENT_ID) -> list[S.Site]:
 
 
 def report(incident: S.Incident, sites: list[S.Site]) -> S.IncidentReport:
-    by_level: dict[str, int] = {}
-    by_cat: dict[str, float] = {}
-    for s in sites:
-        if s.kind == "home" and s.level:
-            by_level[s.level] = by_level.get(s.level, 0) + 1
-        if s.kind == "public" and s.category:
-            by_cat[s.category] = by_cat.get(s.category, 0.0) + (s.est_cost or 0.0)
-    public = sum(by_cat.values())
-    population, per_capita = 40607, 5.03  # stub figures; real ones live in domain/storm/thresholds.yaml
-    threshold_usd = round(population * per_capita, 2)
-    return S.IncidentReport(
-        incident=incident, sites=sites, totals_by_level=by_level, totals_by_category_usd=by_cat,
-        hazards_open=sum(1 for s in sites for h in s.hazards if s.status != "approved"),
-        threshold=S.Threshold(
-            county=incident.county or "Knox", population=population, per_capita_usd=per_capita,
-            fiscal_year="FY2027", threshold_usd=threshold_usd, public_damage_usd=public,
-            percent_of_threshold=round(100 * public / threshold_usd, 1),
-            source="Stub figures. Real values: domain/storm/thresholds.yaml (verify on fema.gov).",
-        ),
-    )
+    """The real rules, run on the stub sites."""
+    from backend.storm_report import build_report
+
+    return build_report(incident, sites)
 
 
 def guide_answer(found: bool) -> S.GuideAnswer:
@@ -257,6 +241,13 @@ class StubStore:
         self.sites[site.id] = site
         return site
 
+    def save(self) -> None:
+        """Stub data lives in memory only."""
+
+    def put_site(self, site: S.Site) -> S.Site:
+        self.sites[site.id] = site
+        return site
+
 
 def examples() -> dict[str, object]:
     """Everything written to contracts/examples/ by scripts/export_examples.py."""
@@ -265,7 +256,8 @@ def examples() -> dict[str, object]:
         "casefile_image": casefile("image"),
         "casefile_audio": casefile("audio"),
         "casefile_document_found": casefile("document"),
-        "casefile_document_not_found": casefile("document", not_found=True),        "casefile_video": casefile("video"),
+        "casefile_document_not_found": casefile("document", not_found=True),
+        "casefile_video": casefile("video"),
         "casefile_code": casefile("code"),
         "casefile_declined": casefile_declined(),
         "incident": inc,

@@ -28,7 +28,7 @@ It is one local app with two layers:
 - `uv run python -m serving.launch --stub`: the API and web app with example responses, no models.
 - `uv run python -m serving.launch --profile mac16`: starts llama-server, then the API on port 8000.
   - Add `--dry-run` to print the commands without starting anything.
-  - In real mode, `/api/health` checks the real model servers. The other endpoints still return stub data until the M1 workers replace them.
+  - In real mode, `/api/health` checks the real model servers. Every endpoint is real: the general tools, Guide, Report sites, the Town report's FEMA threshold and incident Analyze.
 - `uv run python -m scripts.export_examples`: regenerates `contracts/examples/` after any schema change. A test checks they match.
 - `uv run ruff check .`: lint. The rule set is pinned in `pyproject.toml`.
 - `uv run python eval/run_all.py`: the evaluation. Built in M2/M3.
@@ -78,4 +78,5 @@ It is one local app with two layers:
 - **llama.cpp on macOS:** use `brew install llama.cpp` (Metal). On GitHub, the numbered builds are pre-releases, and the macOS builds are `.tar.gz`.
 - **fema.gov blocks scripted downloads.** `fetch_corpus.py` prints the two FEMA PDFs to save from a browser. Don't try to get around the block.
 - **CLAP** (`laion/clap-htsat-unfused`) expects 48 kHz audio, and its weights are `.bin`, which needs torch ≥ 2.6. `transformers` is pinned below 5.
+- **CLAP hears some voices as alarms.** It scored plain speech as "CO alarm" at 45–70%. A StormLog alarm hazard also needs the 3 kHz beep check in `domain/storm/tones.py`.
 - **Qwen GGUF names:** the fallback vision model is `Qwen/Qwen3-VL-4B-Instruct-GGUF`, with files `Qwen3VL-4B-Instruct-Q4_K_M.gguf` and `mmproj-Qwen3VL-4B-Instruct-F16.gguf`.
