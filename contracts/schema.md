@@ -48,8 +48,17 @@ The POST response is the full result, and it is authoritative.
 - **Damage levels:** `Site.level` for homes is set by rules (`domain/storm/levels.py`), never directly by a model. `level_reason` names the rule and the page of the FEMA guide.
 - **Costs:** `est_cost` is always entered by a person.
 
+## Guardrails (`CaseFile.policy`)
+
+Every `CaseFile` carries `policy: {action, reason, message}`. The rules live in `backend/guard/policy.yaml`.
+
+- `answered`: the normal case.
+- `abstained`: the file can't support an answer. `answer` is the standard sentence for that kind, for example "I couldn't find that in the document." or "I can't tell that from this photo." `reason` is `not_in_document` or `cant_tell`.
+- `declined`: the request was stopped before any model ran, either because it was harmful or because it broke a size limit. `artifacts` is empty, and `answer` and `message` hold the text to show. Example: `casefile_declined.json`.
+
 ## Stub-mode behavior
 
 - `/api/analyze` picks the example from the first file's extension, or from `task_hint=code`.
 - A document question or guide question containing the word "pizza" returns the "not found" example. This lets the frontend show both states.
+- A prompt containing "keylogger" returns the declined example.
 - The incident store is in memory and preloaded with the demo incident `inc_demo`, which has three sites.

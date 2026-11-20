@@ -1,0 +1,17 @@
+{
+  "request_id": "req_example",
+  "mode": "general",
+  "status": "ok",
+  "policy": {
+    "action": "declined",
+    "reason": "harmful_request",
+    "message": "I can't help with that. I can answer questions about photos, recordings, documents and videos, or write code for everyday tasks."
+  },
+  "answer": "I can't help with that. I can answer questions about photos, recordings, documents and videos, or write code for everyday tasks.",
+  "artifacts": [],
+  "timings_ms": {
+    "total": 1
+  },
+  "degraded": [],
+  "models": {}
+}

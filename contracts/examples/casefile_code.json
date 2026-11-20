@@ -2,6 +2,11 @@
   "request_id": "req_example",
   "mode": "general",
   "status": "ok",
+  "policy": {
+    "action": "answered",
+    "reason": null,
+    "message": null
+  },
   "answer": "The script totals the damage by category and compares it to the threshold. Tests passed.",
   "artifacts": [
     {

@@ -73,12 +73,24 @@ class ArtifactResult(BaseModel):
     error: str | None = None
 
 
+PolicyAction = Literal["answered", "abstained", "declined"]
+
+
+class PolicyNote(BaseModel):
+    """What the guardrails did with a request (rules in backend/guard/policy.yaml)."""
+
+    action: PolicyAction = "answered"
+    reason: str | None = None  # e.g. "not_in_document", "cant_tell", "harmful_code", "too_long"
+    message: str | None = None  # user-facing text when the action isn't "answered"
+
+
 class CaseFile(BaseModel):
     """Response of POST /api/analyze."""
 
     request_id: str
     mode: Literal["general"] = "general"
     status: Status = "ok"
+    policy: PolicyNote = Field(default_factory=PolicyNote)
     answer: str | None = None
     artifacts: list[ArtifactResult] = Field(default_factory=list)
     timings_ms: dict[str, int] = Field(default_factory=dict)

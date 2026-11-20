@@ -1,0 +1,80 @@
+# StormLog guardrails: what it answers, how it answers, and what it declines.
+# Loaded by backend/guard/policy.py. Read this file to see every rule the app applies.
+#
+#   1. Decline only clearly harmful requests.
+#   2. Abstain when the file can't support an answer.
+#   3. Otherwise answer in a fixed, short format.
+
+limits:
+  question_chars: 4000
+  code_prompt_chars: 8000
+  pasted_text_chars: 200000
+  file_mb: 60
+
+defaults:   # used when the question is empty
+  image: Describe this image in detail.
+  audio: What was said, and what sounds do you hear?
+  document: Summarize the key points.
+  video: What happens in this clip? Note important moments with times.
+  text: Hello.
+
+answer:
+  # Sentence caps for the short answer only; transcripts, descriptions and quotes are exempt.
+  max_sentences: {image: 6, audio: 5, document: 5, video: 6, text: 8}
+  # JSON outputs carry description + answer (+ extracted text), so these leave room for both.
+  max_tokens: {image: 700, audio: 500, document: 500, video: 900, text: 600, code: 1400, extract: 512}
+  temperature: {json: 0.0, prose: 0.2}
+
+messages:
+  abstain:
+    image: "I can't tell that from this photo."
+    audio: "I can't tell that from this recording."
+    document: "I couldn't find that in the document."
+    video: "I can't tell that from this video."
+    text: "I'm not sure."
+    code: "I couldn't write working code for that."
+    guide: "That isn't covered in the guides I have."
+  declined: >-
+    I can't help with that. I can answer questions about photos, recordings, documents and
+    videos, or write code for everyday tasks.
+  support: >-
+    It sounds like you might be going through something hard. In the US you can call or
+    text 988 to reach the Suicide & Crisis Lifeline.
+
+# Text taken from files (documents, OCR, transcripts) is wrapped in random-nonce
+# delimiters and labeled as data that is never obeyed.
+untrusted_text: {delimit: true}
+
+safety:
+  # Optional guard model (Qwen3Guard-Gen-0.6B on servers.guard). It classifies the question
+  # only, never the file. Anything other than Unsafe + a listed category is allowed.
+  decline: [Violent, Non-violent Illegal Acts, Sexual Content or Sexual Acts, Jailbreak]
+  support: [Suicide & Self-Harm]
+  timeout_s: 1.5
+  on_error: allow
+  # Narrow, high-precision patterns that decline without the guard model. Storm and safety
+  # questions ("how do I shut off the gas?") must never match these.
+  decline_patterns:
+    - '\bkey ?loggers?\b'
+    - '\bransomware\b'
+    - '\b(credential|password|cookie) ?(stealer|grabber|harvester)\b'
+    - '\b(ddos|botnet)\b'
+    - '\b(make|build|synthesi[sz]e)\b.{0,40}\b(pipe bomb|explosive device|nerve agent|sarin|ricin)\b'
+    - '\b(child|minor)s?\b.{0,30}\b(sexual|nude|porn)'
+  support_patterns:
+    - '\b(kill|hurt) myself\b'
+    - '\bsuicid(e|al)\b.{0,30}\b(how|ways?|method)'
+    - '\bwant to die\b'
+
+sandbox:
+  timeout_s: 10
+  output_bytes: 20000
+  pure_modules: [math, cmath, decimal, fractions, statistics, random, re, string, collections,
+                 itertools, functools, operator, heapq, bisect, hashlib, typing, dataclasses,
+                 datetime, json, copy, enum, numbers, array, textwrap, unicodedata]
+  data_modules: [csv, io, pandas, numpy]
+  blocked_names: [open, eval, exec, compile, __import__, input, breakpoint, globals, vars,
+                  getattr, setattr, delattr]
+  # Attribute calls that reach files or the OS; list.remove and df.to_csv() stay allowed.
+  blocked_attrs: [open, system, popen, to_pickle, read_pickle, to_excel, read_excel,
+                  to_parquet, read_parquet, fromfile, tofile]

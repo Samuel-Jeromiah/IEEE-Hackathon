@@ -2,11 +2,11 @@
 import { api } from "./api.js";
 import { icon } from "./icons.js";
 import { route, start } from "./router.js";
+import { chatView, toolsRedirectView } from "./views/chat.js";
 import { guideView } from "./views/guide.js";
 import { homeView } from "./views/home.js";
 import { reportView } from "./views/report.js";
 import { siteView } from "./views/site.js";
-import { toolView, toolsHomeView } from "./views/tools.js";
 import { townView } from "./views/town.js";
 
 route("/", homeView);
@@ -14,13 +14,18 @@ route("/report", reportView);
 route("/incident/:incidentId/site/:siteId", siteView);
 route("/town", townView);
 route("/guide", guideView);
-route("/tools", toolsHomeView);
-route("/tools/:kind", toolView);
+route("/chat", chatView);
+route("/tools", toolsRedirectView);
+route("/tools/:kind", toolsRedirectView);
 
 for (const slot of document.querySelectorAll("[data-icon]")) slot.append(icon(slot.dataset.icon, { size: 22 }));
 
 function markNav(path) {
-  const section = path.startsWith("/incident") ? "/town" : path.startsWith("/tools") ? "/tools" : path;
+  const section = path.startsWith("/incident")
+    ? "/town"
+    : path.startsWith("/tools") || path.startsWith("/chat")
+      ? "/chat"
+      : path;
   for (const link of document.querySelectorAll("[data-nav]")) {
     if (link.dataset.nav === section) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");

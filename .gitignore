@@ -29,3 +29,6 @@ Thumbs.db
 .vscode/
 .idea/
 .env
+
+# Per-item eval outputs (only aggregate scores go in the README)
+eval/results/

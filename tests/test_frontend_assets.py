@@ -52,7 +52,7 @@ def test_no_external_urls_in_frontend_code():
 def test_every_referenced_asset_is_served(client):
     assert client.get("/").status_code == 200
     refs = referenced_assets()
-    assert {"css/app.css", "js/app.js", "js/views/town.js", "fonts/atkinson-hyperlegible-latin-400-normal.woff2"} <= refs
+    assert {"css/app.css", "js/app.js", "js/views/town.js", "fonts/manrope-latin-400-normal.woff2"} <= refs
     for ref in sorted(refs):
         assert (FRONTEND / ref).is_file(), f"missing: {ref}"
         resp = client.get(f"/{ref}")
@@ -65,7 +65,9 @@ def test_bundled_fonts_are_licensed():
     fonts = sorted(p.name for p in (FRONTEND / "fonts").glob("*.woff2"))
     assert fonts, "no bundled fonts"
     notes = (FRONTEND / "fonts" / "LICENSES.md").read_text(encoding="utf-8")
-    for family in ("atkinson-hyperlegible", "barlow-condensed", "jetbrains-mono"):
+    for family in ("manrope", "jetbrains-mono"):
         assert any(f.startswith(family) for f in fonts), family
         assert (FRONTEND / "fonts" / f"LICENSE-{family}.txt").is_file(), family
+        assert family.replace("-", " ") in notes.lower() or family in notes.lower()
     assert "SIL Open Font License" in notes
+    assert "Manrope" in notes

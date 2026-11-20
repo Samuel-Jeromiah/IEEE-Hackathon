@@ -23,9 +23,8 @@ const ANALYSIS_PRESETS = [
 
 export async function townView(view) {
   view.append(h("header", { class: "page-head" },
-    h("p", { class: "kicker" }, "Town report"),
-    h("h1", {}, "Damage report"),
-    h("p", { class: "lede" }, "Every site from the field, with totals for the county. Approve entries, enter costs, then export.")));
+    h("h1", {}, "Town report"),
+    h("p", { class: "lede" }, "Sites from the field, county totals, approve, and export.")));
   const body = h("div");
   const picker = await incidentPicker({ onChange: () => load() });
   view.append(picker.el, body);

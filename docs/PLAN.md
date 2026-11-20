@@ -185,6 +185,18 @@ In the orchestrator process: faster-whisper · CLAP htsat-unfused
 
 There is no PII redaction step: this domain has no SSNs, and all data stays on the machine.
 
+### Guardrails (`backend/guard/`, `backend/sandbox/`)
+
+All rules live in one file, `backend/guard/policy.yaml`. Each request passes five checkpoints:
+
+1. **Input gate** (`gate.py`): size and length limits, control characters stripped, and a default question per kind when the question is empty.
+2. **Safety check** (`safety.py`): checks the question only, never the file. Narrow decline patterns (keyloggers, ransomware, credential stealers, weapons, child sexual content) are always on. A self-harm pattern returns the 988 support message. An optional guard model on `servers.guard` adds a second layer, and any failure lets the request through.
+3. **Prompt contract** (`prompts.py`): document excerpts, transcripts and pasted text are wrapped in random-nonce delimiters and labeled as data. Lookalike tags inside the data are neutralized.
+4. **Output check** (`outputs.py`): removes thinking text, maps "I cannot determine…" variants to one standard abstain sentence per kind, converts number words to digits for "how many" questions, and caps sentence counts. It sets `CaseFile.policy`.
+5. **Code sandbox** (`sandbox/runner.py`): an AST allowlist (stdlib, plus pandas, csv and io for table tasks), then `python -I` in a temp folder with a stripped environment and a 10 s timeout that kills the process group. Output is capped at 20 KB, and on macOS `sandbox-exec` denies network access and writes outside the temp folder.
+
+`eval/run_guardrails.py` runs the red-team set in `eval/redteam/items.json`.
+
 ## Model profiles (`serving/models.yaml`)
 
 | | `mac16` (the demo Mac: M1, 16 GB) | `mac8` | `cpu` (Windows fallback) |

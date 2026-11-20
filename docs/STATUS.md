@@ -172,3 +172,138 @@ The files:
 3. Run `./scripts/setup.sh` (about 8 GB of downloads).
 4. Save the two FEMA PDFs from a browser.
 5. After push #2: run `uv run pytest`, then start Claude Code and continue from M1.
+
+---
+
+## 2026-11-19 ~18:40, Mac (Honey): Phase 1 machine setup
+
+**Done:**
+- Homebrew installed; PATH in `~/.zprofile`; `brew install llama.cpp uv gh`.
+- GitHub: `gh` logged in as `honeyN1` with WRITE on the repo; git identity set.
+- Clone at `~/code/IEEE-Hackathon` (not Desktop/Documents).
+- `caffeinate -dims ./scripts/setup.sh` completed for profile `mac16` (vlm, coder, whisper, clap).
+- Both FEMA PDFs in `domain/storm/corpus/` with the expected names (gitignored).
+- `uv run pytest`: 22 passed.
+- Stub launch OK (pill: Stub data); `--profile mac16` OK (pill: Local models ready). Health: vlm/coder up.
+
+**Not yet:**
+- `archive.zip` / `eval/datasets/practice_pack/` — zip not found on this machine.
+
+**Next:** unpack the practice pack when available; start M1 workers on the Mac session.
+
+---
+
+## 2026-11-19 ~18:55, Mac (Honey): M1 workers wired
+
+**Done:**
+- Plumbing: `backend/clients/llm.py`, `normalize.py`, `router.py`, `jobs.py` (SSE event buffer + replay), `manager.py` (lazy Whisper + CLAP).
+- Domain: `domain/verify.py`, `domain/docqa.py` (BM25 → answer → rapidfuzz ≥ 90 or abstain).
+- Workers: image, document (incl. photo-via-document OCR), audio (16 kHz Whisper + 48 kHz CLAP), text.
+- Real mode: `POST /api/analyze` and `GET /api/events/{id}` use workers; stub mode unchanged.
+- Smoke scripts under `scripts/smoke/` (vlm, whisper, clap).
+- Tests: `tests/test_m1_plumbing.py`; full suite **27 passed**.
+- Live checks on mac16: image ("The image is red."), document found + not-found, audio (asr/sound load to **up**). Health: all four model slots up after first audio call.
+
+**Not yet (M2+):** video worker, code sandbox, storm site extraction, guide corpus Q&A, practice pack unzip.
+
+**Next:** M2 video + code; or tune CLAP thresholds; unpack `archive.zip` when available.
+
+---
+
+## 2026-11-19 ~19:10, Mac (Honey): M2 video worker
+
+**Done:**
+- `backend/workers/video.py`: PyAV frame sampling (≤12 @ 512px, ≤90s), rotation metadata, thumbnails; Whisper + CLAP on the audio track; one VLM call citing frame times.
+- Wired into `jobs.py` (replaces M2 stub).
+- Test: `tests/test_video_frames.py`. Full suite green.
+- Live smoke: 2s red→blue mp4 → “Yes, the color changes from red to blue at 0:01.” with frame thumbs.
+
+**Still stubbed:** code sandbox, storm site extraction, guide corpus Q&A.
+
+---
+
+## 2026-11-19 ~19:25, Mac (Honey): Unified Chat replaces Tools
+
+**Done:**
+- Frontend: `#/chat` multimodal composer (multi-attach + prompt), thread UI, SSE progress, `renderCaseFile` replies.
+- Infers `task_hint` from attachments/prompt; mixed files omit hint so the router sniffs each.
+- Nav “Tools” → “Chat”; home slab points to Chat; `#/tools` and `#/tools/:kind` redirect.
+- CSS for thread/composer; `chat` icon. Tests: `tests/test_chat_routing.py`. Suite green.
+
+**Still stubbed:** code sandbox worker; storm site extraction; guide corpus Q&A.
+
+---
+
+## 2026-11-19 ~19:30, Mac (Honey): ChatGPT-inspired Chat UI
+
+**Done:**
+- Restyled `#/chat` toward a ChatGPT-like layout: centered “How can I help?” empty state, suggestion cards, avatars + bubbles, sticky rounded composer with + / send, full-bleed chat mode (`body.chat-mode`).
+- Fixed a missing paren in `showEmpty` that broke the JS bundle.
+- Verified in browser; chat routing tests still pass.
+
+---
+
+## 2026-11-19 ~19:35, Mac (Honey): Global ChatGPT palette + blue accent
+
+**Done:**
+- Rethemed `:root` / dark tokens to ChatGPT-like cool grays/whites; `--signal` is now blue (`#2563eb` / `#3b82f6`).
+- Top bar light, active tabs blue, brand mark + favicon blue; primary buttons/slabs/chat bubbles/send use blue.
+- FEMA placard colors left semantic. Applied across all pages via shared tokens.
+
+---
+
+## 2026-11-19 ~19:45, Mac (Honey): Manrope + plain tool UI
+
+**Done:**
+- Bundled Manrope (400–700) offline; body/display use Manrope. Dropped heavy uppercase/display bolding.
+- Flat light gray background (`#f3f4f6`); removed hero/chat gradients and AI-style empty state/suggestion cards.
+- Trimmed home/chat/report/guide/town copy; quieter inputs and buttons. Backend unchanged.
+
+Correction: the ChatGPT-style chat (with the "How can I help?" empty state, suggestion cards and bubbles) was restored after this entry, at the user's request. It keeps Manrope and the flat gray background.
+
+---
+
+## 2026-11-19 ~20:30, Mac (Honey): Guardrails + real code worker
+
+**Done:**
+- `backend/guard/`. All rules are in `policy.yaml`, and the checkpoints are:
+  - `gate.py`: limits and default questions.
+  - `safety.py`: narrow decline patterns, a 988 support message, and an optional guard model that lets requests through if it fails.
+  - `prompts.py`: nonce-delimited untrusted text with lookalike tags neutralized. Used by the document, audio, video and text workers.
+  - `outputs.py`: a standard abstain sentence, thinking text stripped, digits for "how many" answers, and a sentence cap.
+- `backend/sandbox/runner.py`: AST allowlist, `python -I` in a temp folder, a timeout that kills the process group, a 20 KB output cap, and macOS `sandbox-exec` with no network and no writes outside the temp folder. The sandbox was verified to block both.
+- The code worker is real (`backend/workers/code.py`):
+  - The coder writes code plus its own asserts, which run in the sandbox, with one repair attempt.
+  - It replies in fenced blocks, not JSON, because the 3B model cut off JSON strings that contained quotes.
+  - It adds missing imports from the allowlist, and falls back to the VLM if the coder isn't running.
+- Contract: `CaseFile.policy = {action: answered|abstained|declined, reason, message}`, plus the `casefile_declined` example. In stub mode, "keylogger" returns declined. `contracts/schema.md` has a new Guardrails section.
+- Frontend: declined requests show a neutral "Can't help with that" notice. Abstained answers outside the document tool show a "Can't tell" block.
+- Tests: `tests/test_guardrails.py` and `tests/test_sandbox.py`. The whole suite passes (81), and so does ruff.
+- `eval/run_guardrails.py` with `eval/redteam/items.json` passes **15/15** on mac16:
+  - harmful requests 5/5 declined
+  - everyday and storm questions 5/5 answered
+  - document abstain 2/2
+  - prompt injection 2/2
+  - size limit 1/1
+- Code spot check on coder-3b: 3 of 5 passed. In the 2 failures the code was correct but the model's own expected test values were wrong, and the UI says the tests didn't pass.
+
+**Not done:** the guard model isn't downloaded or launched. `servers.guard` isn't in `models.yaml`, so only the pattern layer is active. The practice pack is still missing, so accuracy isn't measured yet.
+
+---
+
+## 2026-11-19 ~20:25, Mac (Honey): Guide Q&A and Document to JSON
+
+**Done:**
+- Guide is real:
+  - `domain/storm/guide.py` runs BM25 over all 222 corpus pages and verifies quotes.
+  - `backend/workers/guide.py` asks the VLM for an answer plus a verbatim quote. If the quote can't be verified, the answer is "not covered".
+  - The "county deadline" example was swapped for an answerable question.
+- Removed the timing, model and request-ID line under chat replies.
+- Chat has a fifth card, "Document to JSON". It fills in the prompt and opens the file picker.
+  - `domain/extract.py` and the document worker's extraction mode turn the model's (path, value, quote) fields into nested JSON. Every value's quote is checked.
+  - The UI shows the JSON with a Copy button and an evidence list marking each field verified or needs review.
+- Contract: `ArtifactResult.extraction` (`Extraction`, `ExtractedField`), plus the `casefile_document_extract` example.
+- Tests: `test_guide.py` and `test_extract.py`. The suite passes (87).
+- Live: a sample lease gave 14 of 14 fields verified. A sample damage report gave 3 site objects, with the 2 missing costs marked needs review.
+
+Update (~20:30): removed Document to JSON (the Chat card, `domain/extract.py`, the document worker's extraction mode, `ArtifactResult.extraction` and its stub example) at the user's request. Chat is back to four cards.

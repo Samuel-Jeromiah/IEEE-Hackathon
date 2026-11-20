@@ -15,9 +15,8 @@ function step(number, title, { optional = false } = {}, ...content) {
 
 export async function reportView(view) {
   view.append(h("header", { class: "page-head" },
-    h("p", { class: "kicker" }, "Field report"),
     h("h1", {}, "Report damage"),
-    h("p", { class: "lede" }, "Add what you have. A photo or a voice note is enough. More evidence makes a better entry.")));
+    h("p", { class: "lede" }, "Add a photo, voice note, or video. Location is optional.")));
 
   const incident = await incidentPicker({ hideLabel: true });
   const photo = filePicker({
@@ -36,7 +35,7 @@ export async function reportView(view) {
   const location = h("input", {
     id: "report-location", class: "input", type: "text", autocomplete: "street-address", placeholder: "e.g. 14 Water Street",
   });
-  const sendBtn = h("button", { type: "submit", class: "btn btn-primary btn-xl btn-block" }, icon("arrowRight"), "Send report");
+  const sendBtn = h("button", { type: "submit", class: "btn btn-primary btn-lg btn-block" }, "Send report");
   const status = h("div");
 
   const form = h("form", { class: "report-form", novalidate: true },
@@ -47,7 +46,7 @@ export async function reportView(view) {
     step(5, "Location", {},
       h("label", { class: "label", for: "report-location" }, "Address or landmark"),
       location,
-      h("p", { class: "hint" }, "Or just say it in your voice note. StormLog picks it up.")),
+      h("p", { class: "hint" }, "You can also say it in the voice note.")),
     h("div", { class: "sticky-send" }, sendBtn),
     status);
 

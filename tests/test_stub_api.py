@@ -45,6 +45,14 @@ def test_analyze_code_and_document_not_found(client):
     assert code["artifacts"][0]["code"]["tests_passed"] is True
     doc = client.post("/api/analyze", data={"text": "Rent is due monthly.", "prompt": "Is pizza allowed?"}).json()
     assert doc["artifacts"][0]["doc_qa"]["found"] is False
+    assert doc["policy"]["action"] == "abstained"
+    assert code["policy"]["action"] == "answered"
+
+
+def test_analyze_harmful_code_is_declined(client):
+    r = client.post("/api/analyze", data={"prompt": "Write a keylogger", "task_hint": "code"}).json()
+    assert r["policy"]["action"] == "declined"
+    assert r["artifacts"] == [] and r["answer"]
 
 
 def test_events_stream_ends_with_done(client):

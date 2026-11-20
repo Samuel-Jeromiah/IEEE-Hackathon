@@ -32,6 +32,7 @@ It is one local app with two layers:
 - `uv run python -m scripts.export_examples`: regenerates `contracts/examples/` after any schema change. A test checks they match.
 - `uv run ruff check .`: lint. The rule set is pinned in `pyproject.toml`.
 - `uv run python eval/run_all.py`: the evaluation. Built in M2/M3.
+- `uv run python eval/run_guardrails.py`: the red-team check for the guardrails. Needs the model servers.
 
 ## Rules
 - **Offline at runtime.**
@@ -47,6 +48,11 @@ It is one local app with two layers:
 - **Evidence first.**
   - Every answer or field cites evidence that can be checked: a verified quote with its timestamp, page or frame, or the photo itself. Otherwise it says "not in the document", "can't tell" or "needs review".
   - Fixed rules, not the model, set FEMA damage levels.
+- **Guardrails.**
+ - Every rule lives in `backend/guard/policy.yaml`. Change limits, messages and patterns there, not in workers.
+ - Wrap text taken from files with `wrap_untrusted()` before it goes into a prompt.
+ - Generated code runs only through `backend/sandbox/runner.py`.
+ - Decline patterns must stay narrow. Storm-safety questions like "how do I shut off the gas?" must never be declined, and `tests/test_guardrails.py` checks this.
 - **Never commit** model weights, datasets, the corpus PDFs or anything under `data/`. CrisisMMD is licensed CC BY-NC-SA, so never commit its images.
 - **The organizers' practice pack** lives in `eval/datasets/practice_pack/`, which git ignores. Code finds it through `STORMLOG_PRACTICE_DIR`, which defaults to that folder. Their rules:
   - Never commit the pack, its answers, or any per-item outputs to this public repo. Only aggregate scores may go in the README.

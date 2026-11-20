@@ -103,8 +103,21 @@ def casefile(kind: str, request_id: str = "req_example", not_found: bool = False
         )
     else:  # plain text question
         art = S.ArtifactResult(artifact_id="a1", kind="text", answer="This is a stub answer.", model="stub")
-    return S.CaseFile(request_id=request_id, answer=art.answer, artifacts=[art],
+    policy = S.PolicyNote()
+    if kind == "document" and not_found:
+        policy = S.PolicyNote(action="abstained", reason="not_in_document", message=art.answer)
+    return S.CaseFile(request_id=request_id, policy=policy, answer=art.answer, artifacts=[art],
                       timings_ms={"total": art.latency_ms or 0}, models=models)
+
+
+def casefile_declined(request_id: str = "req_example") -> S.CaseFile:
+    """A harmful request stopped by the guardrails before any model ran."""
+    from backend.guard.policy import load_policy
+
+    msg = load_policy().messages.declined
+    return S.CaseFile(request_id=request_id, answer=msg,
+                      policy=S.PolicyNote(action="declined", reason="harmful_request", message=msg),
+                      timings_ms={"total": 1})
 
 
 # --------------------------------------------------------------------------- storm mode
@@ -252,9 +265,9 @@ def examples() -> dict[str, object]:
         "casefile_image": casefile("image"),
         "casefile_audio": casefile("audio"),
         "casefile_document_found": casefile("document"),
-        "casefile_document_not_found": casefile("document", not_found=True),
-        "casefile_video": casefile("video"),
+        "casefile_document_not_found": casefile("document", not_found=True),        "casefile_video": casefile("video"),
         "casefile_code": casefile("code"),
+        "casefile_declined": casefile_declined(),
         "incident": inc,
         "site_flooded_home": site_flooded_home(),
         "site_basement_alarm": site_basement_alarm(),

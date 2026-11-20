@@ -2,6 +2,11 @@
   "request_id": "req_example",
   "mode": "general",
   "status": "ok",
+  "policy": {
+    "action": "answered",
+    "reason": null,
+    "message": null
+  },
   "answer": "Yes. A pickup truck drives through the flooded street starting at 0:04 (frame 2).",
   "artifacts": [
     {

@@ -7,9 +7,10 @@ or directly:
     STORMLOG_MODE=stub uv run uvicorn backend.main:create_app --factory --port 8000
 
 Stub mode serves the examples in backend/stub_data.py for every endpoint, so the
-frontend can be built without models. Real mode reports real model health; the other
-endpoints still return stub data until the workers replace them (docs/PLAN.md, M1-M3).
-Stub hook: a document question containing "pizza" returns the not-found example.
+frontend can be built without models. Real mode runs the workers for image, document,
+audio, video, text and code, behind the guardrails in backend/guard/; storm still uses stubs.
+Stub hooks: a document question containing "pizza" returns the not-found example, and a
+prompt containing "keylogger" returns the declined example.
 """
 from __future__ import annotations
 
@@ -27,17 +28,14 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from backend import jobs, manager, stub_data
 from backend import schemas as S
-from backend import stub_data
 from backend.config import load_models_config
+from backend.router import route_kind
+from backend.workers import guide as guide_worker
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_DIR = ROOT / "frontend"
-
-IMAGE_EXT = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp", ".gif", ".bmp"}
-AUDIO_EXT = {".mp3", ".wav", ".m4a", ".ogg", ".opus", ".flac", ".aac"}
-VIDEO_EXT = {".mp4", ".mov", ".webm", ".mkv", ".avi", ".m4v"}
-DOC_EXT = {".pdf", ".docx", ".txt", ".md"}
 
 
 def lan_ip() -> str:
@@ -59,21 +57,6 @@ def qr_png_b64(text: str) -> str | None:
         return base64.b64encode(buf.getvalue()).decode()
     except Exception:
         return None
-
-
-def guess_kind(filename: str | None, task_hint: str | None, has_text: bool) -> str:
-    if task_hint == "code":
-        return "code"
-    ext = Path(filename or "").suffix.lower()
-    if ext in IMAGE_EXT:
-        return "image"
-    if ext in AUDIO_EXT:
-        return "audio"
-    if ext in VIDEO_EXT:
-        return "video"
-    if ext in DOC_EXT or has_text:
-        return "document"
-    return "text"
 
 
 def placeholder_png(label: str) -> bytes:
@@ -106,13 +89,18 @@ def create_app() -> FastAPI:
     app = FastAPI(title="StormLog API", version="0.1.0")
     store = stub_data.StubStore()
 
+    if mode != "stub":
+        @app.on_event("startup")
+        async def warm_guides() -> None:
+            asyncio.create_task(asyncio.to_thread(guide_worker.warm))
+
     # ------------------------------------------------------------------ service
     @app.get("/api/health", response_model=S.Health)
     async def health() -> S.Health:
         if mode == "stub":
             return stub_data.examples()["health_stub"]
         servers = load_models_config()["servers"]
-        models: dict[str, str] = {"asr": "not_loaded", "sound": "not_loaded"}
+        models: dict[str, str] = dict(manager.model_status())
         async with httpx.AsyncClient(timeout=2.0) as client:
             for name, srv in servers.items():
                 try:
@@ -137,32 +125,50 @@ def create_app() -> FastAPI:
         task_hint: str | None = Form(default=None),
         request_id: str | None = Form(default=None),
     ) -> S.CaseFile:
-        first = files[0].filename if files else None
-        kind = guess_kind(first, task_hint, bool(text))
-        not_found = kind == "document" and "pizza" in (prompt or "").lower()
-        result = stub_data.casefile(kind, request_id or stub_data.new_id("req"), not_found=not_found)
-        if first:
-            result.artifacts[0].filename = first
-        return result
+        if mode == "stub":
+            first = files[0].filename if files else None
+            kind = route_kind(filename=first, task_hint=task_hint, has_text=bool(text))
+            if "keylogger" in f"{prompt or ''} {text or ''}".lower():
+                return stub_data.casefile_declined(request_id or stub_data.new_id("req"))
+            not_found = kind == "document" and "pizza" in (prompt or "").lower()
+            result = stub_data.casefile(kind, request_id or stub_data.new_id("req"), not_found=not_found)
+            if first:
+                result.artifacts[0].filename = first
+            return result
+
+        payloads: list[tuple[str | None, bytes]] = []
+        for f in files:
+            payloads.append((f.filename, await f.read()))
+        return await jobs.analyze(
+            files=payloads, text=text, prompt=prompt, task_hint=task_hint, request_id=request_id,
+        )
 
     @app.get("/api/events/{request_id}")
     async def events(request_id: str) -> StreamingResponse:
-        steps = [
-            S.ProgressEvent(type="progress", stage="normalize", pct=10, message="Reading your file"),
-            S.ProgressEvent(type="progress", stage="extract", pct=45, message="Looking and listening"),
-            S.ProgressEvent(type="progress", stage="answer", pct=75, message="Writing the answer"),
-            # Deltas are raw text chunks that carry their own spacing, like model tokens.
-            *[S.ProgressEvent(type="delta", delta=w if i == 0 else f" {w}")
-              for i, w in enumerate("This is a streamed stub answer.".split(" "))],
-            S.ProgressEvent(type="done", pct=100, case_id=request_id),
-        ]
+        if mode == "stub":
+            steps = [
+                S.ProgressEvent(type="progress", stage="normalize", pct=10, message="Reading your file"),
+                S.ProgressEvent(type="progress", stage="extract", pct=45, message="Looking and listening"),
+                S.ProgressEvent(type="progress", stage="answer", pct=75, message="Writing the answer"),
+                # Deltas are raw text chunks that carry their own spacing, like model tokens.
+                *[S.ProgressEvent(type="delta", delta=w if i == 0 else f" {w}")
+                  for i, w in enumerate("This is a streamed stub answer.".split(" "))],
+                S.ProgressEvent(type="done", pct=100, case_id=request_id),
+            ]
 
-        async def gen():
-            for ev in steps:
+            async def stub_gen():
+                for ev in steps:
+                    yield f"data: {ev.model_dump_json(exclude_none=True)}\n\n"
+                    await asyncio.sleep(0.05)
+
+            return StreamingResponse(stub_gen(), media_type="text/event-stream",
+                                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+        async def real_gen():
+            async for ev in jobs.HUB.subscribe(request_id):
                 yield f"data: {ev.model_dump_json(exclude_none=True)}\n\n"
-                await asyncio.sleep(0.05)
 
-        return StreamingResponse(gen(), media_type="text/event-stream",
+        return StreamingResponse(real_gen(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     # ------------------------------------------------------------------ storm mode
@@ -237,7 +243,12 @@ def create_app() -> FastAPI:
 
     @app.post("/api/guide/ask", response_model=S.GuideAnswer)
     async def guide_ask(body: S.GuideQuestion) -> S.GuideAnswer:
-        return stub_data.guide_answer(found="pizza" not in body.question.lower())
+        if mode == "stub":
+            return stub_data.guide_answer(found="pizza" not in body.question.lower())
+        try:
+            return await guide_worker.ask(body.question)
+        except httpx.HTTPError as exc:
+            raise HTTPException(503, "The local model isn't responding. Try again in a moment.") from exc
 
     @app.post("/api/incidents/{incident_id}/analyze", response_model=S.AnalysisResult)
     async def analyze_incident(incident_id: str, body: S.AnalyzePrompt) -> S.AnalysisResult:

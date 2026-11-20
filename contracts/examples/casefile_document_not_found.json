@@ -2,6 +2,11 @@
   "request_id": "req_example",
   "mode": "general",
   "status": "ok",
+  "policy": {
+    "action": "abstained",
+    "reason": "not_in_document",
+    "message": "I couldn't find that in the document."
+  },
   "answer": "I couldn't find that in the document.",
   "artifacts": [
     {

@@ -7,30 +7,36 @@ const section = (title, ...content) => h("section", {}, h("h3", { class: "eyebro
 
 export function renderCaseFile(cf, { fileUrl } = {}) {
   const wrap = h("div", { class: "result" });
+  if (cf.policy?.action === "declined") {
+    wrap.append(h("div", { class: "notice" }, icon("alert"),
+      h("div", {}, h("p", {}, cf.policy.message || cf.answer || "I can't help with that."))));
+    return wrap;
+  }
   if (cf.status !== "ok" || cf.degraded?.length) {
     wrap.append(h("div", { class: "notice notice-warn" }, icon("alert"),
       h("div", {},
         h("strong", {}, cf.status === "failed" ? "This didn't work" : "Partial result"),
         (cf.degraded || []).map((d) => h("p", {}, d)))));
   }
-  for (const artifact of cf.artifacts) wrap.append(renderArtifact(artifact, fileUrl));
-  const models = Object.entries(cf.models || {}).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`);
-  wrap.append(h("p", { class: "result-meta" },
-    cf.timings_ms?.total != null ? h("span", {}, `${(cf.timings_ms.total / 1000).toFixed(1)} s`) : null,
-    models.length ? h("span", {}, models.join(" · ")) : null,
-    h("span", {}, `request ${cf.request_id}`)));
+  const abstained = cf.policy?.action === "abstained";
+  for (const artifact of cf.artifacts) wrap.append(renderArtifact(artifact, fileUrl, abstained));
   return wrap;
 }
 
-function renderArtifact(a, fileUrl) {
+function renderArtifact(a, fileUrl, abstained = false) {
   const failed = a.status === "failed"
     ? h("div", { class: "notice notice-error" }, icon("alert"), h("div", {}, h("strong", {}, "Couldn't process this file"),
       h("p", {}, a.error || "Unknown error")))
     : null;
+  // Documents have their own not-found block; elsewhere an abstention replaces the answer.
+  const cantTell = abstained && a.answer && !["document", "code"].includes(a.kind)
+    ? notFoundBlock("Can't tell", a.answer, "StormLog says so instead of guessing.")
+    : null;
+  const shown = cantTell ? { ...a, answer: null } : a;
   const body = {
     image: imageResult, audio: audioResult, document: documentResult, video: videoResult, code: codeResult,
-  }[a.kind]?.(a, fileUrl) || textResult(a);
-  return h("div", { class: "stack" }, failed, body);
+  }[a.kind]?.(shown, fileUrl) || (cantTell ? null : textResult(shown));
+  return h("div", { class: "stack" }, failed, cantTell, body);
 }
 
 function textResult(a) {

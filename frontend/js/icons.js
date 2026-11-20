@@ -30,6 +30,7 @@ const ICONS = {
   plus: [P("M12 5v14M5 12h14")],
   flag: [P("M5 21V4h11l-1.5 4L16 12H5")],
   bolt: [P("M13 2 4 14h7l-1 8 9-12h-7z")],
+  chat: [P("M4 5h16v11H8l-4 4z")],
 };
 
 export function icon(name, { size = 24, label } = {}) {
